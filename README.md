@@ -7,22 +7,22 @@ The package is currently in alpha 001 stage. From our testing most provided feat
 
 ## Dependencies and compatibility
 HARPY can be used with python 2.7 as well as 3.x verions.
-The only additional package required to use this project is [numpy](www.numpy.org)  
+The only additional package required to use this project is [numpy](www.numpy.org).  
 
 ## License
-The code on github is released under the GPLv3. We know it is not the most common license for python sources. However, for users who just use it for data processessing and do not distribute their code the GPL should not cause any problems. If you want to distribute code including the HARPY package, it will have to under the terms of the GPL as well.
+The code on github is released under the GPLv3. We know it is not the most common license for python sources. However, for users who just use it for data processessing and do not distribute their code the GPL should not cause any problems. If you want to distribute code including the HARPY package, it will have to be under the terms of the GPL as well.
 
-As this can be a problem in some cases we decided to include a Contributor License Agreement(CLA) for people who want to participate in the project (you will be asked to agree upon the first pull request). This will allow us in cases where there is a good reason to distribute the code under a different license. 
+There is a Contributor License Agreement(CLA) for people who want to participate in the project (you will be asked to agree upon the first pull request). This will allow us to distribute the code under a different license in cases where there is a good reason why GPL can not be used. 
 
-Please note: This clause is only to facilitate access to HARPY. We will never charge money money for it!
 
 ## Who is behind the project and why is it on github?
-The project was initiated by GEMPACK software development team. We felt the need to make the processing of HAR files easier from within other programming languages. Therefore we decided to write a python interface to read and write HAR files. After the hard part was done (reading Fortran binary files from python is not fun), the question arose how to realease the software.
+The project was initiated by GEMPACK software development team. We felt the need to make the processing of HAR files easier from within other programming languages. Therefore we decided to write a python interface to read and write HAR files. After the hard part was done (reading Fortran binary files from python is not fun), the question arose how to release the software.
 We decided to make it an open source project as we lack the man power to properly maintain the package according to the standards we impose in GEMPACK:
 * Ensure correctness of all provided features
 * Ensure completeness, i.e. all features of GEMPACK are supported
-* Keeping it synchronized with future versions of the GEMPACK software
-We will still be actively involved in the HARPY project by maintaining it on github, improve and update features, bug fixes,... However, the GEMPACK software team is not directly responsible for the HARPY project so please abstain from sending bug reports or feature requests to the GEMPACK support.
+* Keeping it synchronized with future versions of the GEMPACK software and HAR format changes 
+
+We will still be actively involved in the HARPY project by maintaining it on github, improving and updating features, making bug fixes,... However, the GEMPACK software team is not directly responsible for the HARPY project so please abstain from sending bug reports or feature requests to the GEMPACK support.
 
 ## Bugs and feature requests
 As stated above, GEMPACK software is not directly responsible for the HARPY project. It is open source. So please abstain from sending bug reports or feature requests to the GEMPACK support. Instead use the [github pages](https://github.com/GEMPACKsoftware/HARPY/issues/new) to notify the developers of any issues.
@@ -34,7 +34,7 @@ Contributing to the project is easy (recommended steps):
 * Create a [fork](https://github.com/GEMPACKsoftware/HARPY/edit/master/README.md#fork-destination-box) of this project
 * Create a feature branch from the master
 * Commit changes to the branch
-* Push the branch back into your github github project
+* Push the branch back into your github project
 * Open a pull request on github for the changes
 * If there are issues, there will be a round of discussion and fixes
 * Once everything is OK, we will merge the changes with the main project
