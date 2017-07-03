@@ -12,7 +12,7 @@ The only additional package required to use this project is [numpy](www.numpy.or
 ## License
 The code on github is released under the GPLv3. We know it is not the most common license for python sources. However, for users who just use it for data processessing and do not distribute their code the GPL should not cause any problems. If you want to distribute code including the HARPY package, it will have to be under the terms of the GPL as well.
 
-There is a Contributor License Agreement(CLA) for people who want to participate in the project (you will be asked to agree upon the first pull request). This will allow us to distribute the code under a different license in cases where there is a good reason why GPL can not be used. 
+There is a [Contributor License Agreement(CLA)](https://gist.github.com/floschiffmann/de59328612863e1566a37a3490f9c5fd) for people who want to participate in the project (you will be asked to agree upon the first pull request). This will allow us to distribute the code under a different license in cases where there is a good reason why GPL can not be used. 
 
 
 ## Who is behind the project and why is it on github?
