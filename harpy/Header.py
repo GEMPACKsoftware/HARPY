@@ -105,16 +105,13 @@ class Header(HeaderData):
         if not len(string12) <= 12: raise Exception('CoeffName has to be less then 12 characters')
         self._Cname = string12
 
-    def getDataCopy(self):
-        return np.ascontiguousarray(self._DataObj)
-
     @property
     def DataObj(self):
         return self._DataObj
     @DataObj.setter
     def DataObj(self, array):
         if not isinstance(array,np.ndarray):
-            array=np.array(array,order='F')
+            array=np.array(array)
         shape=array.shape
         dtype=str(array.dtype)
         if "|" in dtype and array.ndim>1:
@@ -129,7 +126,7 @@ class Header(HeaderData):
             if len(self._setNames) != array.ndim: raise Exception("Mismatch between data and set rank")
             for i,idim,els in enumerate(zip(array.shape, self._DimDesc)):
                 if idim != len(els): raise Exception("Mismatch between data and set dimension "+str(i))
-        self._DataObj=np.asfortranarray(array)
+        self._DataObj=array
 
     @property
     def SetNames(self):
@@ -223,7 +220,6 @@ class Header(HeaderData):
 
         return self._createDerivedHeader(ilist)
 
-
     def _createDerivedHeader(self,indexList):
 
         label="Derivative of "+self.HeaderLabel
@@ -252,27 +248,113 @@ class Header(HeaderData):
         return self.HeaderFromData(self.mkHeaderName(), array, label=label, CName=CName,
                                    sets=sets,SetElements=SetElements)
 
+    def __rsub__(self, other):
+        op="Subtraction"
+        if isinstance(other,Header):
+            self.verifyHeaders(op, other)
+            newarray=other.DataObj-self.DataObj
+        elif isinstance(other,(int,float)):
+            newarray=other-self.DataObj
+        else:
+            raise Exception("Only Header or scalar allowed in subtraction")
 
+        return self.HeaderFromData(self.mkHeaderName(), newarray, label="Sub Result", CName="Subtract",
+                                   sets=self.SetNames,SetElements=[self.SetElements[nam] for nam in self.SetNames])
 
     def __sub__(self, other):
-        if not isinstance(other,Header):
-            raise Exception("Non Header object in subtraction")
-        if not self.DataObj.shape == other.DataObj.shape:
-            raise Exception("Can not subtract Headers with different shape")
+        op="Subtraction"
+        if isinstance(other,Header):
+            self.verifyHeaders(op, other)
+            newarray=self.DataObj-other.DataObj
+        elif isinstance(other,(int,float)):
+            newarray=self.DataObj-other
+        else:
+            raise Exception("Only Header or scalar allowed in subtraction")
 
-        newarray=self.DataObj-other.DataObj
         return self.HeaderFromData(self.mkHeaderName(), newarray, label="Sub Result", CName="Subtract",
                                    sets=self.SetNames,SetElements=[self.SetElements[nam] for nam in self.SetNames])
+
+    def __radd__(self, other):
+        return self+other
 
     def __add__(self, other):
-        if not isinstance(other,Header):
-            raise Exception("Non Header object in subtraction")
-        if not self.DataObj.shape == other.DataObj.shape:
-            raise Exception("Can not subtract Headers with different shape")
+        op="Addition"
+        if isinstance(other,Header):
+            self.verifyHeaders(op,other)
+            newarray=self.DataObj+other.DataObj
+        elif isinstance(other,(int,float)):
+            newarray=self.DataObj+other
+        else:
+            raise Exception("Only Header or scalar allowed in addition")
 
-        newarray=self.DataObj+other.DataObj
-        return self.HeaderFromData(self.mkHeaderName(), newarray, label="Sub Result", CName="Subtract",
-                                   sets=self.SetNames,SetElements=[self.SetElements[nam] for nam in self.SetNames])
+        return self.HeaderFromData(self.mkHeaderName(), newarray, label="Sub Result", CName="Add",
+                                   sets=self.SetNames, SetElements=[self.SetElements[nam] for nam in self.SetNames])
+
+    def __rmul__(self, other):
+        return self*other
+
+    def __mul__(self, other):
+        op="Multiplication"
+        if isinstance(other,Header):
+            self.verifyHeaders(op,other)
+            newarray=self.DataObj*other.DataObj
+        elif isinstance(other,(int,float)):
+            newarray=self.DataObj*other
+        else:
+            raise Exception("Only Header or scalar allowed in multiplication")
+
+        return self.HeaderFromData(self.mkHeaderName(), newarray, label="Sub Result", CName="Multiply",
+                                   sets=self.SetNames, SetElements=[self.SetElements[nam] for nam in self.SetNames])
+    def __rdiv__(self, other):
+        op="Division"
+        if isinstance(other,Header):
+            self.verifyHeaders(op,other)
+            newarray=other.DataObj/self.DataObj
+        elif isinstance(other,(int,float)):
+            newarray=other/self.DataObj
+        else:
+            raise Exception("Only Header or scalar allowed in division")
+
+        return self.HeaderFromData(self.mkHeaderName(), newarray, label="Sub Result", CName="Divide",
+                                   sets=self.SetNames, SetElements=[self.SetElements[nam] for nam in self.SetNames])
+
+    def __div__(self, other):
+        op="Division"
+        if isinstance(other,Header):
+            self.verifyHeaders(op,other)
+            newarray=self.DataObj/other.DataObj
+        elif isinstance(other,(int,float)):
+            newarray=self.DataObj/other
+        else:
+            raise Exception("Only Header or scalar allowed in division")
+
+        return self.HeaderFromData(self.mkHeaderName(), newarray, label="Sub Result", CName="Divide",
+                                   sets=self.SetNames, SetElements=[self.SetElements[nam] for nam in self.SetNames])
+
+    def __pow__(self,power):
+        op="Power"
+        if isinstance(other,Header):
+            self.verifyHeaders(op,other)
+            newarray=self.DataObj**other.DataObj
+        elif isinstance(other,(int,float)):
+            newarray=self.DataObj**other
+        else:
+            raise Exception("Only Header or scalar allowed in Power")
+
+        return self.HeaderFromData(self.mkHeaderName(), newarray, label="Sub Result", CName="Power",
+                                   sets=self.SetNames, SetElements=[self.SetElements[nam] for nam in self.SetNames])
+
+
+    def verifyHeaders(self, op, other):
+        if not self.DataObj.shape == other.DataObj.shape:
+            raise Exception("Headers with different shape not permitted in " + op)
+        if self.SetNames != other.SetNames:
+            print("Warning: Headers " + self.HeaderName + " and " + other.HeaderName + " in " + op + " have different sets associated.")
+            print("         Operation will proceed but make sure to investigate")
+            if not all([self.SetElements[i] == other.SetElements[i] for i in self.SetNames]):
+                print("Warning: Set elements in Headers " + self.HeaderName + " and " + other.HeaderName + " in " + op + " do not match")
+                print("         Operation will proceed but make sure to investigate")
+
 
     def append(self,other,axis):
         pass
@@ -290,7 +372,7 @@ class Header(HeaderData):
 
         oldshape=list(refData.shape)
         oldshape.append(len(headerList))
-        newarray=np.ndarray(tuple(oldshape),order='F',dtype=refData.dtype)
+        newarray=np.ndarray(tuple(oldshape),dtype=refData.dtype)
         for i in range(len(headerList)):
             newarray[...,i]=headerList[i].DataObj[...]
 
@@ -315,7 +397,7 @@ class Header(HeaderData):
 
         oldshape=list(refData.shape)
         oldshape.append(len(headerList)-1)
-        newarray=np.ndarray(tuple(oldshape),order='F',dtype=refData.dtype)
+        newarray=np.ndarray(tuple(oldshape),dtype=refData.dtype)
         for i in range(len(headerList)-1):
             newarray[...,i]=headerList[i+1].DataObj[...]-headerList[i].DataObj[...]
 
