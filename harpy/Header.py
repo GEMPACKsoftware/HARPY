@@ -9,20 +9,44 @@ __docformat__ = 'restructuredtext en'
 genHeaderID = 0
 
 class Header(HeaderData):
+    """
+    Contains all methods to manipulate data associate with the Header. This can:
+
+    the Header name
+    the Coefficient name
+    the set names associated with its dimensions
+    the elements of the sets
+    the labaling information
+    the data entries in the Header
+
+    Access to these is provided by properties
+
+    Header objects permit operation such as indexing and basic mathematical operations, +,-,*,/
+
+    """
     DataType = ''
 
     def __init__(self, HeaderName=''):
-        HeaderData.__init__(self)
         """
-
         :rtype: HeaderData
         """
+
+        HeaderData.__init__(self)
         self.is_valid = True
         self.Error = ''
         self._HeaderName = HeaderName
 
     @classmethod
     def HeaderFromFile(cls, name, pos, HARFile):
+        """
+        Reads a Header from file.
+        This function Should only be invoked from class HAR as this knows the positio of the Header
+
+        :param name: Name of the Header
+        :param pos: position on the file
+        :param HARFile: file object contaning the Header
+        :return:
+        """
         cls=Header()
         cls.f=HARFile
         cls._HeaderName=name
@@ -40,6 +64,20 @@ class Header(HeaderData):
 
     @classmethod
     def HeaderFromData(cls, name, array, label=None, CName=None,sets=None,SetElements=None):
+        """
+        Creates a new Header object from basic data. only Header name and data array are mandatory
+
+        :param str name: Header name (max 4 characters)
+        :param numpy.ndarray array: data array contianing all values
+        :param str label: long description of content
+        :param str CName: Coefficicient name from which the Header is derived in TAB files
+        :param list(str) sets: Name of the sets corresponding to each dimensions (size needs to be rank array)
+        :param SetElements: list of list of elements (one per dim) or dict(setnames,elements)
+        :type SetElements: list(list(str)) || dict(str:list(str))
+        :return: new Header object
+        :rtype: Header
+
+        """
         cls=Header()
         cls.HeaderName=name
         cls.DataObj=array
@@ -61,12 +99,28 @@ class Header(HeaderData):
 
     @classmethod
     def SetHeaderFromData(cls,name,array,SName,label=None):
+        """
+        Create a Header object which contains the marker of a set Header (ViewHar might need to know)
+
+        :param str name: Header Name
+        :param numpy,chararray array: numpy array with the set elements
+        :param str SName: Name of the set
+        :param label: long description of the content of the sets
+        :return: Header object which is recognized by Viewhar as Set
+        :rtype: Header
+        """
         setLabel="Set "+SName
         if label:setLabel=setLabel+" "+label
         return cls.HeaderFromData(name, array, setLabel)
 
 
     def HeaderToFile(self,HARFile):
+        """
+        Should only be called from class HAR
+
+        :param HARFile: file object to which the Header will be written
+        :return:
+        """
         self.f=HARFile
         pos=self.f.tell()
         try:
@@ -80,6 +134,9 @@ class Header(HeaderData):
 
     @property
     def HeaderName(self):
+        """
+        Property to retrive or set a pointer from/to the Headername (str max 4 characters)
+        """
         return self._HeaderName
     @HeaderName.setter
     def HeaderName(self, string4):
@@ -89,6 +146,9 @@ class Header(HeaderData):
 
     @property
     def HeaderLabel(self):
+        """
+        Property to retrive or set a pointer from/to the Header descirption (str max 70 characters)
+        """
         return self._LongName
     @HeaderLabel.setter
     def HeaderLabel(self, string70):
@@ -98,6 +158,9 @@ class Header(HeaderData):
 
     @property
     def CoeffName(self):
+        """
+        Property to retrive or set a pointer from/to the associated coefficient (str max 12 characters)
+        """
         return self._Cname
     @CoeffName.setter
     def CoeffName(self,string12):
@@ -107,6 +170,9 @@ class Header(HeaderData):
 
     @property
     def DataObj(self):
+        """
+        Property to retrive or set a pointer from/to the data array (str max 4 characters)
+        """
         return self._DataObj
     @DataObj.setter
     def DataObj(self, array):
@@ -130,6 +196,9 @@ class Header(HeaderData):
 
     @property
     def SetNames(self):
+        """
+        Property to retrive or set a pointer from/to the Set Names associated with the dimensions (list(str) with len of rank array)
+        """
         return self._setNames
     @SetNames.setter
     def SetNames(self,names):
@@ -154,6 +223,12 @@ class Header(HeaderData):
 
     @property
     def SetElements(self):
+        """
+        Property to retrive or set a pointer from/to the Set Elements associated with the dimensions
+        The getter returns a dictionary of the form (set:[Elelement List])
+        The setter expects a dict of the same form. If no elements are associated with a dimension None can be passed
+        instead of a list.
+        """
         return dict(zip(self._setNames, self._DimDesc))
     @SetElements.setter
     def SetElements(self,elDict):
@@ -186,7 +261,18 @@ class Header(HeaderData):
                     self._DimDesc[i]=val[:]
 
     def __getitem__(self, item):
-        # type: (list) -> Header
+        """
+        Allows index access to Header objects. indicies can be numeric or element strings
+        E.g. Head["Elem1",4] is valid.
+        Slices, strides, index lists and ellipsis are implemented.
+        If a single element is indexed, a Header with reduced dimensionality is returned
+        E.g. Head[2,2,2] will return a scalar Header
+        to retain a dimension in this acces use list access
+        E.g. Head[2,2,[2]] will return a 1-D Header with 3rd dimension (3rd element) retianed
+
+        :param item: indexing pattern
+        :return: A new Header object
+        """
         if len(item) != self._DataObj.ndim: raise Exception("Rank mismatch in indexing")
         if all([isinstance(i,int) for i in item]):
             ilist=[ [i] for i in item]
@@ -245,34 +331,34 @@ class Header(HeaderData):
         print (array)
 
 
-        return self.HeaderFromData(self.mkHeaderName(), array, label=label, CName=CName,
-                                   sets=sets,SetElements=SetElements)
+        return self.HeaderFromData(self._mkHeaderName(), array, label=label, CName=CName,
+                                   sets=sets, SetElements=SetElements)
 
     def __rsub__(self, other):
         op="Subtraction"
         if isinstance(other,Header):
-            self.verifyHeaders(op, other)
+            self._verifyHeaders(op, other)
             newarray=other.DataObj-self.DataObj
         elif isinstance(other,(int,float)):
             newarray=other-self.DataObj
         else:
             raise Exception("Only Header or scalar allowed in subtraction")
 
-        return self.HeaderFromData(self.mkHeaderName(), newarray, label="Sub Result", CName="Subtract",
-                                   sets=self.SetNames,SetElements=[self.SetElements[nam] for nam in self.SetNames])
+        return self.HeaderFromData(self._mkHeaderName(), newarray, label="Sub Result", CName="Subtract",
+                                   sets=self.SetNames, SetElements=[self.SetElements[nam] for nam in self.SetNames])
 
     def __sub__(self, other):
         op="Subtraction"
         if isinstance(other,Header):
-            self.verifyHeaders(op, other)
+            self._verifyHeaders(op, other)
             newarray=self.DataObj-other.DataObj
         elif isinstance(other,(int,float)):
             newarray=self.DataObj-other
         else:
             raise Exception("Only Header or scalar allowed in subtraction")
 
-        return self.HeaderFromData(self.mkHeaderName(), newarray, label="Sub Result", CName="Subtract",
-                                   sets=self.SetNames,SetElements=[self.SetElements[nam] for nam in self.SetNames])
+        return self.HeaderFromData(self._mkHeaderName(), newarray, label="Sub Result", CName="Subtract",
+                                   sets=self.SetNames, SetElements=[self.SetElements[nam] for nam in self.SetNames])
 
     def __radd__(self, other):
         return self+other
@@ -280,14 +366,14 @@ class Header(HeaderData):
     def __add__(self, other):
         op="Addition"
         if isinstance(other,Header):
-            self.verifyHeaders(op,other)
+            self._verifyHeaders(op, other)
             newarray=self.DataObj+other.DataObj
         elif isinstance(other,(int,float)):
             newarray=self.DataObj+other
         else:
             raise Exception("Only Header or scalar allowed in addition")
 
-        return self.HeaderFromData(self.mkHeaderName(), newarray, label="Sub Result", CName="Add",
+        return self.HeaderFromData(self._mkHeaderName(), newarray, label="Sub Result", CName="Add",
                                    sets=self.SetNames, SetElements=[self.SetElements[nam] for nam in self.SetNames])
 
     def __rmul__(self, other):
@@ -296,56 +382,56 @@ class Header(HeaderData):
     def __mul__(self, other):
         op="Multiplication"
         if isinstance(other,Header):
-            self.verifyHeaders(op,other)
+            self._verifyHeaders(op, other)
             newarray=self.DataObj*other.DataObj
         elif isinstance(other,(int,float)):
             newarray=self.DataObj*other
         else:
             raise Exception("Only Header or scalar allowed in multiplication")
 
-        return self.HeaderFromData(self.mkHeaderName(), newarray, label="Sub Result", CName="Multiply",
+        return self.HeaderFromData(self._mkHeaderName(), newarray, label="Sub Result", CName="Multiply",
                                    sets=self.SetNames, SetElements=[self.SetElements[nam] for nam in self.SetNames])
     def __rdiv__(self, other):
         op="Division"
         if isinstance(other,Header):
-            self.verifyHeaders(op,other)
+            self._verifyHeaders(op, other)
             newarray=other.DataObj/self.DataObj
         elif isinstance(other,(int,float)):
             newarray=other/self.DataObj
         else:
             raise Exception("Only Header or scalar allowed in division")
 
-        return self.HeaderFromData(self.mkHeaderName(), newarray, label="Sub Result", CName="Divide",
+        return self.HeaderFromData(self._mkHeaderName(), newarray, label="Sub Result", CName="Divide",
                                    sets=self.SetNames, SetElements=[self.SetElements[nam] for nam in self.SetNames])
 
     def __div__(self, other):
         op="Division"
         if isinstance(other,Header):
-            self.verifyHeaders(op,other)
+            self._verifyHeaders(op, other)
             newarray=self.DataObj/other.DataObj
         elif isinstance(other,(int,float)):
             newarray=self.DataObj/other
         else:
             raise Exception("Only Header or scalar allowed in division")
 
-        return self.HeaderFromData(self.mkHeaderName(), newarray, label="Sub Result", CName="Divide",
+        return self.HeaderFromData(self._mkHeaderName(), newarray, label="Sub Result", CName="Divide",
                                    sets=self.SetNames, SetElements=[self.SetElements[nam] for nam in self.SetNames])
 
     def __pow__(self,power):
         op="Power"
         if isinstance(other,Header):
-            self.verifyHeaders(op,other)
+            self._verifyHeaders(op, other)
             newarray=self.DataObj**other.DataObj
         elif isinstance(other,(int,float)):
             newarray=self.DataObj**other
         else:
             raise Exception("Only Header or scalar allowed in Power")
 
-        return self.HeaderFromData(self.mkHeaderName(), newarray, label="Sub Result", CName="Power",
+        return self.HeaderFromData(self._mkHeaderName(), newarray, label="Sub Result", CName="Power",
                                    sets=self.SetNames, SetElements=[self.SetElements[nam] for nam in self.SetNames])
 
 
-    def verifyHeaders(self, op, other):
+    def _verifyHeaders(self, op, other):
         if not self.DataObj.shape == other.DataObj.shape:
             raise Exception("Headers with different shape not permitted in " + op)
         if self.SetNames != other.SetNames:
@@ -361,7 +447,7 @@ class Header(HeaderData):
 
     @classmethod
     def concatenate(cls,headerList,setName='',elemList=None,headerName=''):
-        if not headerName: headerName=Header.mkHeaderName()
+        if not headerName: headerName=Header._mkHeaderName()
         if not setName: setName='CONCAT'
         if not elemList: elemList=['elem'+str(i) for i in range(0,len(headerList))]
         if len(elemList) != len(headerList):
@@ -386,7 +472,7 @@ class Header(HeaderData):
 
     @classmethod
     def runningDiff(cls,headerList,setName='',elemList=None,headerName=''):
-        if not headerName: headerName=Header.mkHeaderName()
+        if not headerName: headerName=Header._mkHeaderName()
         if not setName: setName='CONCAT'
         if not elemList: elemList=['elem'+str(i) for i in range(0,len(headerList)-1)]
         if len(elemList) != len(headerList)-1:
@@ -411,7 +497,7 @@ class Header(HeaderData):
 
 
     @staticmethod
-    def mkHeaderName():
+    def _mkHeaderName():
         global genHeaderID
         name = (str(genHeaderID) + "_____")[0:4]
         genHeaderID+=1
