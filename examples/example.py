@@ -46,8 +46,10 @@ print (headersOnFile)
 inHeader=inHar.getHeader("RAND")
 
 # subtract the Header
-HeaderDiff=inHeader-randomHeader
+HeaderDiff=inHeader-inHeader
 HeaderDiff.HeaderName="DIFF"
+
+HeaderAdd=2/inHeader*inHeader
 
 outHAR.addHeader(HeaderDiff)
 

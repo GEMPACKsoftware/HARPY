@@ -55,6 +55,7 @@ def readHeader1C(Head):
     Head.f.readCharVec(Head._DataObj)
 
     Head.DataDimension = [Head.FileDims[0]]
+    Head._DataObj = np.ascontiguousarray(Head._DataObj)
 
 
 def writeHeader1C(Head):
@@ -63,7 +64,7 @@ def writeHeader1C(Head):
     typeString = str(Head._DataObj.dtype)
     secRecList = ['    ', '1C', 'FULL', Head._LongName, 2, Head._DataObj.size, int(typeString[2:])]
     Head.f.writeSecondRecord(secRecList)
-    Head.f.write1CData(Head._DataObj, Head._DataObj.size, int(typeString[2:]))
+    Head.f.write1CData(np.asfortranarray(Head._DataObj), Head._DataObj.size, int(typeString[2:]))
 
 # ======================================== 2D ===============================================
 def readHeader2D(Head, dtype):
@@ -75,6 +76,8 @@ def readHeader2D(Head, dtype):
         Head._DataObj = np.ndarray(shape=Head.FileDims[0:2], dtype=np.int32, order='F')
 
     Head.f.read2Dobject(Head._DataObj, dtype)
+    Head._DataObj = np.ascontiguousarray(Head._DataObj)
+
 
 
 def writeHeader2D(Head):
@@ -91,7 +94,7 @@ def writeHeader2D(Head):
     secRecList.extend(shape2D)
 
     Head.f.writeSecondRecord(secRecList)
-    Head.f.write2Dobject(Head._DataObj, dtype)
+    Head.f.write2Dobject(np.asfortranarray(Head._DataObj), dtype)
 
 # ======================================== 7D ===============================================
 def readHeader7D(Head, hasSets=True):
@@ -108,6 +111,7 @@ def readHeader7D(Head, hasSets=True):
         Head._DataObj = Head.f.read7DFullObj(Head._DataObj, 'f')
     else:
         Head._DataObj = Head.f.read7DSparseObj(Head._DataObj, 'f')
+    Head._DataObj=np.ascontiguousarray(Head._DataObj)
 
 
 def writeHeader7D(Head):
@@ -134,6 +138,6 @@ def writeHeader7D(Head):
         Head.f.writeSetElInfo(Head._setNames, Head._DimType, Head._DimDesc, Head._Cname)
 
     if Head.StorageType == 'FULL':
-        Head.f.write7DDataFull(Head._DataObj, 'f')
+        Head.f.write7DDataFull(np.asfortranarray(Head._DataObj), 'f')
     else:
-        Head.f.write7DSparseObj(Head._DataObj, 'f')
+        Head.f.write7DSparseObj(np.asfortranarray(Head._DataObj), 'f')
