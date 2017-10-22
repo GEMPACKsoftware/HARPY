@@ -141,3 +141,4 @@ def writeHeader7D(Head):
         Head.f.write7DDataFull(np.asfortranarray(Head._DataObj), 'f')
     else:
         Head.f.write7DSparseObj(np.asfortranarray(Head._DataObj), 'f')
+

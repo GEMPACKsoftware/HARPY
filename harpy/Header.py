@@ -141,7 +141,7 @@ class Header(HeaderData):
     @HeaderName.setter
     def HeaderName(self, string4):
         if not isinstance(string4, str): raise Exception('Name not a string')
-        if not len(string4) <= 4: raise Exception('Header name has to be shorter than 5')
+        if not len(string4) <= 4: raise Exception('Header name has to be shorter than 5. Name is '+string4)
         self._HeaderName = string4
 
     @property
@@ -184,9 +184,9 @@ class Header(HeaderData):
             raise Exception("Version 1 Headers can only have scalar or vectorial string data")
         else:
             if "int" in dtype and array.ndim>2:
-                raise Exception("Version 1 Headers can only have up to 2D string data")
+                raise Exception("Version 1 Headers can only have up to 2D integer data")
             elif "float" in dtype and array.ndim > 7:
-                raise Exception("Version 1 Headers can only have up to 2D string data")
+                raise Exception("Version 1 Headers can only have up to 7D Real data")
             if "64" in dtype: raise Exception("Can only write 4byte data in Version 1 Headers")
         if self._setNames:
             if len(self._setNames) != array.ndim: raise Exception("Mismatch between data and set rank")
@@ -238,9 +238,11 @@ class Header(HeaderData):
         Will fail if set is not in Header
         """
         if not isinstance(elDict,dict): raise Exception("Argument for SetElements needs to be dict")
+        if not all([setn in elDict for setn in self._setNames]):
+            raise Exception("Can not set Elements as set is not present in Header")
         for key,val in elDict.items():
-            if not any ([key.strip()== setn.strip() for setn in self._setNames]):
-                raise Exception("Can not set Elements as set is not present in Header")
+            if not key.strip() in  self._setNames : continue
+                #raise Exception("Can not set Elements as set is not present in Header")
             indices=[i for i,set in enumerate(self._setNames) if key.strip() == set.strip()]
             if val:
                 if not all([(isinstance(item, str)) for item in val]):
