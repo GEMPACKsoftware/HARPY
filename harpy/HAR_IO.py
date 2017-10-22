@@ -390,19 +390,22 @@ class HAR_IO(object):
             self.f.write(struct.pack('=i4siiii', 16, tb('    '), 1, 0, 0, 16))
             return
 
-        for i, val in enumerate(array.flatten('F')):
-            if val != 0:
-                ndata += 1
-                indexList.append(i + 1)
-                valList.append(val)
-                if ndata == maxData:
-                    self.writeSparseList(NNonZero, dtype, indexList, ndata, nrec, valList)
-                    nrec = nrec - 1;
-                    indexList = [];
-                    valList = [];
-                    ndata = 0
+        indexList=maxData*[None]
+        valList=maxData*[None]
+        tmp=array.flatten('F')
+        nzind=np.nonzero(tmp)
+        for i in nzind[0]:
+            ndata += 1
+            indexList[ndata-1]=i
+            valList[ndata-1]=tmp[i]
+            if ndata == maxData:
+                self.writeSparseList(NNonZero, dtype, indexList, ndata, nrec, valList)
+                nrec = nrec - 1;
+                ndata = 0
 
         if ndata != 0:
+            indexList=indexList[0:ndata]
+            valList=valList[0:ndata]
             self.writeSparseList(NNonZero, dtype, indexList, ndata, nrec, valList)
 
     def writeSparseList(self, NNonZero, dtype, indexList, ndata, nrec, valList):
