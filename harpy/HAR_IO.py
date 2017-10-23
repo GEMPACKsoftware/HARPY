@@ -396,7 +396,7 @@ class HAR_IO(object):
         nzind=np.nonzero(tmp)
         for i in nzind[0]:
             ndata += 1
-            indexList[ndata-1]=i
+            indexList[ndata-1]=i+1
             valList[ndata-1]=tmp[i]
             if ndata == maxData:
                 self.writeSparseList(NNonZero, dtype, indexList, ndata, nrec, valList)
