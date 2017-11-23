@@ -153,6 +153,30 @@ class Header(HeaderData):
             self.f.seek(pos)
             self.f.truncate()
 
+    def setProperties(self,HeaderName=None,Sets=None,CoeffName=None,DataObj=None, SetEl=None):
+        """
+        Utility function to set multiple properties of an exisiting Header at once
+        Note, this can not be used to change dimensions and all variables are supposed to
+        Conform the structure of the existing object
+
+        :param str HeaderName:  Name of the Header
+        :param list(str) Sets: Name of the sets
+        :param str CoeffName: Coefficient name
+        :param np.ndarray DataObj: the data associated with the object
+        :param dict(str:list(str)) SetEl: Can be used to change a subset by omitting other entries in dictionary
+        :return : None
+        """
+        if HeaderName:self.HeaderName=HeaderName
+        if Sets:self.SetNames=Sets
+        if CoeffName:self.CoeffName=CoeffName
+        if DataObj:self.DataObj=DataObj
+        if SetEl:
+            if not isinstance(SetEl,dict)
+            tmpSetEl=self.SetElements
+            for keys in SetEl.keys():
+                tmpSetEl[keys]=SetEl[keys]
+            self.SetElements=SetEl
+
 
     @property
     def HeaderName(self):
@@ -576,11 +600,22 @@ class Header(HeaderData):
 
     @classmethod
     def sum(cls,Header,axis=None):
+        outHeader=cls._reduce(Header,axis=axis,npfunction=np.sum)
+        return outHeader
+
+    @classmethod
+    def mean(cls,Header,axis=None):
+        outHeader=cls._reduce(Header,axis=axis,npfunction=np.mean)
+        return outHeader
+
+    @classmethod
+    def _reduce(cls,Header,axis=None,npfunction=None):
         if not axis is None:
             if isinstance(axis,str):
                 nsets=Header._setNames.count(axis)
-                if nsets ==0: raise Exception("Setname in axis is invalid")
-                if nsets > 1: raise Exception("Setname appears in more than one dimensions")
+                print (Header._setNames)
+                if nsets ==0: raise Exception("Setname "+axis+" is invalid. Available Sets are:"+",".join(Header._setNames))
+                if nsets > 1: raise Exception("Setname "+axis+" appears in more than one dimensions. Need to use int instead")
                 myaxis=Header._setNames.index(axis)
             elif isinstance(axis,int):
                 if axis > len(Header._setNames) -1 : raise  Exception("Axis out of range")
@@ -593,10 +628,10 @@ class Header(HeaderData):
             else:
                 raise Exception("wrong type for axis argument")
 
-            newarray=np.sum(Header.DataObj,axis=myaxis)
+            newarray=npfunction(Header.DataObj,axis=myaxis)
             newSet=Header.SetNames[0:myaxis]+Header._setNames[myaxis+1:]
         else:
-            newarray = np.sum(Header.DataObj)
+            newarray = npfunction(Header.DataObj)
             newSet=[]
         return cls.HeaderFromData(cls._mkHeaderName(),array=newarray,sets=newSet,SetElements=Header.SetElements)
 
