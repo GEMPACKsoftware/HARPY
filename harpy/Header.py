@@ -63,6 +63,28 @@ class Header(HeaderData):
         self.Error = sys.exc_info()[1]
 
     @classmethod
+    def HeaderFromConstant(cls, name, label=None, CName=None,sets=None,SetElements=None, dims=None, value=None):
+        if sets is None and dims is None:
+            raise Exception("Header from constant needs either sets or dims")
+        if not (sets is None or dims is None):
+            raise Exception("Header from constant can only have sets or dims but not both")
+        if not isinstance(value,(int,float)):
+            raise Exception("value must be integer float")
+        if value is None: value=0.0
+        if not dims is None:
+            if not isinstance(dims,tuple): raise("dims must be given as tuple (empty tuple for scalars)")
+            array=np.full(dims,value)
+        else:
+            if not isinstance(SetElements,(list,dict)): raise Exception("SetElements must be list or dictionary")
+            if isinstance(SetElements,list):
+                dims=tuple([len(sublist) for sublist in SetElements])
+            else:
+                if not all([set in SetElements for set in sets]): raise Exception("Not all sets in SetElement Dict")
+                dims=tuple([len(SetElements[set]) for set in sets])
+
+        return cls.HeaderFromData(name, np.full(dims,value), label=label, CName=CName,sets=sets,SetElements=SetElements)
+
+    @classmethod
     def HeaderFromData(cls, name, array, label=None, CName=None,sets=None,SetElements=None):
         """
         Creates a new Header object from basic data. only Header name and data array are mandatory
@@ -131,6 +153,30 @@ class Header(HeaderData):
             self.f.seek(pos)
             self.f.truncate()
 
+    def setProperties(self,HeaderName=None,Sets=None,CoeffName=None,DataObj=None, SetEl=None):
+        """
+        Utility function to set multiple properties of an exisiting Header at once
+        Note, this can not be used to change dimensions and all variables are supposed to
+        Conform the structure of the existing object
+
+        :param str HeaderName:  Name of the Header
+        :param list(str) Sets: Name of the sets
+        :param str CoeffName: Coefficient name
+        :param np.ndarray DataObj: the data associated with the object
+        :param dict(str:list(str)) SetEl: Can be used to change a subset by omitting other entries in dictionary
+        :return : None
+        """
+        if HeaderName:self.HeaderName=HeaderName
+        if Sets:self.SetNames=Sets
+        if CoeffName:self.CoeffName=CoeffName
+        if DataObj:self.DataObj=DataObj
+        if SetEl:
+            if not isinstance(SetEl,dict)
+            tmpSetEl=self.SetElements
+            for keys in SetEl.keys():
+                tmpSetEl[keys]=SetEl[keys]
+            self.SetElements=SetEl
+
 
     @property
     def HeaderName(self):
@@ -148,6 +194,8 @@ class Header(HeaderData):
     def HeaderLabel(self):
         """
         Property to retrive or set a pointer from/to the Header descirption (str max 70 characters)
+        :returns: Label of the Header
+        :rtype: str
         """
         return self._LongName
     @HeaderLabel.setter
@@ -187,17 +235,18 @@ class Header(HeaderData):
                 raise Exception("Version 1 Headers can only have up to 2D integer data")
             elif "float" in dtype and array.ndim > 7:
                 raise Exception("Version 1 Headers can only have up to 7D Real data")
-            if "64" in dtype: raise Exception("Can only write 4byte data in Version 1 Headers")
+            #if "64" in dtype: raise Exception("Can only write 4byte data in Version 1 Headers")
         if self._setNames:
             if len(self._setNames) != array.ndim: raise Exception("Mismatch between data and set rank")
             for i,idim,els in enumerate(zip(array.shape, self._DimDesc)):
                 if idim != len(els): raise Exception("Mismatch between data and set dimension "+str(i))
-        self._DataObj=array
+        self._DataObj=array.astype(dtype=dtype.replace("64","32"))
 
     @property
     def SetNames(self):
         """
         Property to retrive or set a pointer from/to the Set Names associated with the dimensions (list(str) with len of rank array)
+        :rtype: list(str)
         """
         return self._setNames
     @SetNames.setter
@@ -275,6 +324,7 @@ class Header(HeaderData):
         :param item: indexing pattern
         :return: A new Header object
         """
+        if not isinstance(item, tuple): item = [item]
         if len(item) != self._DataObj.ndim: raise Exception("Rank mismatch in indexing")
         if all([isinstance(i,int) for i in item]):
             ilist=[ [i] for i in item]
@@ -283,30 +333,58 @@ class Header(HeaderData):
         if not all ([(isinstance(i,str,slice,int,list) for i in item)]):
             raise Exception("Index error Can only use int,str or slice as index")
         #TODO: maybe introduce a dict for the El ind mapping
-        ilist=[]
-        for ind,Els in zip(item,self._DimDesc):
-            if isinstance(ind,slice):
-                indList=[ind.start,ind.stop,ind.step]
-                if all( [ i is None or isinstance(i,int) for i in indList] ):
-                    ilist.append(ind)
-                else:
-                    if isinstance(ind.step,str): raise Exception("Elements not allowed as stride")
-                    if isinstance(ind.start,str): start=Els.index(ind.start)
-                    else: start=ind.start
-                    if isinstance(ind.stop,str): stop=Els.index(ind.stop)+1
-                    else: stop=ind.stop
-                    ilist.append(slice(start,stop,ind.step))
-            elif isinstance(ind,list):
-                if not all([isinstance(i,(int,str)) for i in ind]):
-                    raise Exception("Index list must only contain integer or str")
-                ilist.append([i if isinstance(i,int) else Els.index(i) for i in ind])
-            else:
-                if isinstance(ind, str): start=Els.index(ind)
-                else: start=ind
-                #needed to keep the rank of the resulting matrix
-                ilist.append(start)
+        ilist = self.itemList_to_intIndex(item)
 
         return self._createDerivedHeader(ilist)
+
+    def __setitem__(self, item, value):
+        if not isinstance(item,tuple): item=[item]
+        if len(item) != self._DataObj.ndim: raise Exception("Rank mismatch in indexing")
+        if all([isinstance(i,int) for i in item]):
+            ilist=[ [i] for i in item]
+        elif not all ([(isinstance(i,str,slice,int,list) for i in item)]):
+            raise Exception("Index error Can only use int,str or slice as index")
+        else:
+            ilist = self.itemList_to_intIndex(item)
+
+        if isinstance(value,Header):
+            self._DataObj[tuple(ilist)]=value.DataObj
+        elif isinstance(value,(int,np.ndarray,float)):
+            self._DataObj[tuple(ilist)] = value
+        else:
+            raise Exception("Can only set Header via Header, numpy object or number")
+
+    def itemList_to_intIndex(self, item):
+        ilist = []
+        for ind, Els in zip(item, self._DimDesc):
+            if isinstance(ind, slice):
+                indList = [ind.start, ind.stop, ind.step]
+                if all([i is None or isinstance(i, int) for i in indList]):
+                    ilist.append(ind)
+                else:
+                    if isinstance(ind.step, str): raise Exception("Elements not allowed as stride")
+                    if isinstance(ind.start, str):
+                        start = Els.index(ind.start)
+                    else:
+                        start = ind.start
+                    if isinstance(ind.stop, str):
+                        stop = Els.index(ind.stop) + 1
+                    else:
+                        stop = ind.stop
+                    ilist.append(slice(start, stop, ind.step))
+            elif isinstance(ind, list):
+                if not all([isinstance(i, (int, str)) for i in ind]):
+                    raise Exception("Index list must only contain integer or str")
+                ilist.append([i if isinstance(i, int) else Els.index(i.strip()) for i in ind])
+            else:
+                if isinstance(ind, str):
+                    start = Els.index(ind)
+                else:
+                    start = ind
+                # needed to keep the rank of the resulting matrix
+                ilist.append(start)
+        return ilist
+
 
     def _createDerivedHeader(self,indexList):
 
@@ -328,10 +406,7 @@ class Header(HeaderData):
                     SetElements.append(None)
             else:
                 SetElements=None
-        print (sets,SetElements)
         array= self._DataObj[tuple(indexList)]
-        print (array)
-
 
         return self.HeaderFromData(self._mkHeaderName(), array, label=label, CName=CName,
                                    sets=sets, SetElements=SetElements)
@@ -375,8 +450,12 @@ class Header(HeaderData):
         else:
             raise Exception("Only Header or scalar allowed in addition")
 
+        SetEls=None
+        if not self.SetNames is None:
+            SetEls=[self.SetElements[nam] for nam in self.SetNames]
+
         return self.HeaderFromData(self._mkHeaderName(), newarray, label="Sub Result", CName="Add",
-                                   sets=self.SetNames, SetElements=[self.SetElements[nam] for nam in self.SetNames])
+                                   sets=self.SetNames, SetElements=SetEls)
 
     def __rmul__(self, other):
         return self*other
@@ -436,12 +515,14 @@ class Header(HeaderData):
     def _verifyHeaders(self, op, other):
         if not self.DataObj.shape == other.DataObj.shape:
             raise Exception("Headers with different shape not permitted in " + op)
-        if self.SetNames != other.SetNames:
-            print("Warning: Headers " + self.HeaderName + " and " + other.HeaderName + " in " + op + " have different sets associated.")
-            print("         Operation will proceed but make sure to investigate")
-            if not all([self.SetElements[i] == other.SetElements[i] for i in self.SetNames]):
-                print("Warning: Set elements in Headers " + self.HeaderName + " and " + other.HeaderName + " in " + op + " do not match")
-                print("         Operation will proceed but make sure to investigate")
+        # if self.SetNames != other.SetNames:
+        #     print("Warning: Headers " + self.HeaderName + " and " + other.HeaderName + " in " + op + " have different sets associated.")
+        #     print (self.SetElements)
+        #     print (other.SetElements)
+        #     print("         Operation will proceed but make sure to investigate")
+        #     if not all([self.SetElements[i] == other.SetElements[i] for i in self.SetNames]):
+        #         print("Warning: Set elements in Headers " + self.HeaderName + " and " + other.HeaderName + " in " + op + " do not match")
+        #         print("         Operation will proceed but make sure to investigate")
 
 
     def append(self,other,axis):
@@ -514,7 +595,45 @@ class Header(HeaderData):
         flatDat=self.DataObj.flatten()
         return zip(itertools.product(*ElementsSetList),flatDat)
 
+    def nan_to_number(self, number=0):
+        self._DataObj=np.nan_to_num(self._DataObj,number)
 
+    @classmethod
+    def sum(cls,Header,axis=None):
+        outHeader=cls._reduce(Header,axis=axis,npfunction=np.sum)
+        return outHeader
+
+    @classmethod
+    def mean(cls,Header,axis=None):
+        outHeader=cls._reduce(Header,axis=axis,npfunction=np.mean)
+        return outHeader
+
+    @classmethod
+    def _reduce(cls,Header,axis=None,npfunction=None):
+        if not axis is None:
+            if isinstance(axis,str):
+                nsets=Header._setNames.count(axis)
+                print (Header._setNames)
+                if nsets ==0: raise Exception("Setname "+axis+" is invalid. Available Sets are:"+",".join(Header._setNames))
+                if nsets > 1: raise Exception("Setname "+axis+" appears in more than one dimensions. Need to use int instead")
+                myaxis=Header._setNames.index(axis)
+            elif isinstance(axis,int):
+                if axis > len(Header._setNames) -1 : raise  Exception("Axis out of range")
+                myaxis=axis
+            elif isinstance(axis,list):
+                if any( [ not isinstance(item,int) for item in list] ) :
+                    raise Exception("sum with axis=list requires all elements to be integers ")
+                if any( [ item > len(Header._setNames) -1 for item in list] ) :
+                    raise Exception("item in list out of range of dimensions")
+            else:
+                raise Exception("wrong type for axis argument")
+
+            newarray=npfunction(Header.DataObj,axis=myaxis)
+            newSet=Header.SetNames[0:myaxis]+Header._setNames[myaxis+1:]
+        else:
+            newarray = npfunction(Header.DataObj)
+            newSet=[]
+        return cls.HeaderFromData(cls._mkHeaderName(),array=newarray,sets=newSet,SetElements=Header.SetElements)
 
 
 

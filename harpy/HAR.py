@@ -33,7 +33,7 @@ class HAR(object):
 
         self._collectHeaders()
 
-    def getHeader(self, name, getDeepCopy=False):
+    def getHeader(self, name, getDeepCopy=True):
 
         """
         Returns the Header with the name name from the file object associated with the HAR object.
@@ -42,7 +42,8 @@ class HAR(object):
         If an independent copy is required, set getDeepCopy=True
         :param name: str
         :param getDeepCopy: bool
-        :returns: Header
+        :returns: Header: Header
+        :rtype: Header
         """
         if not name in self._HeaderList:
             print("Header " + name + " was not found on file " + self.fname)
@@ -73,7 +74,7 @@ class HAR(object):
         """
         Can be used to obtain a list of all Headers on the file associated with the HAR object
 
-        :return: List of str
+        :return: list(str)
         """
         # :type: () -> list[str]
         return self._HeaderList
