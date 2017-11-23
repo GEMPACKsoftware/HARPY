@@ -33,7 +33,7 @@ class HAR(object):
 
         self._collectHeaders()
 
-    def getHeader(self, name, getDeepCopy=False):
+    def getHeader(self, name, getDeepCopy=True):
 
         """
         Returns the Header with the name name from the file object associated with the HAR object.
