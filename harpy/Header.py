@@ -444,8 +444,6 @@ class Header(HeaderData):
         else:
             shape = None
             numpyInd = tuple(indexList)
-            print (indexList)
-            print (numpyInd)
 
         return numpyInd, shape
 
