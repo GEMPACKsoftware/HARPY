@@ -171,7 +171,7 @@ class Header(HeaderData):
         if CoeffName:self.CoeffName=CoeffName
         if DataObj:self.DataObj=DataObj
         if SetEl:
-            if not isinstance(SetEl,dict)
+            if not isinstance(SetEl,dict): raise Exception
             tmpSetEl=self.SetElements
             for keys in SetEl.keys():
                 tmpSetEl[keys]=SetEl[keys]
@@ -295,6 +295,7 @@ class Header(HeaderData):
             indices=[i for i,set in enumerate(self._setNames) if key.strip() == set.strip()]
             if val:
                 if not all([(isinstance(item, str)) for item in val]):
+                    print ([type(item) for item in val if not isinstance(item,str)])
                     raise Exception("Element list must only contain strings")
                 if not all([len(item) <= 12 for item in val]):
                     raise Exception('Maximum length for set Elements is limited to 12 characters')
@@ -347,10 +348,12 @@ class Header(HeaderData):
         else:
             ilist = self.itemList_to_intIndex(item)
 
+        newinds, = self.makeNPIndex(ilist)
+
         if isinstance(value,Header):
-            self._DataObj[tuple(ilist)]=value.DataObj
+            self._DataObj[newinds]=value.DataObj
         elif isinstance(value,(int,np.ndarray,float)):
-            self._DataObj[tuple(ilist)] = value
+            self._DataObj[newinds] = value
         else:
             raise Exception("Can only set Header via Header, numpy object or number")
 
@@ -393,7 +396,16 @@ class Header(HeaderData):
         CName="Derived"
         sets=[]; SetElements=[]
         for i in range(0,len(indexList)):
-            if not isinstance(indexList[i],int) : sets.append("S"+str(i))
+            #Create New set names if necessary
+            if not isinstance(indexList[i],int) :
+                if isinstance(indexList[i],slice):
+                    if indexList[i].start is None and indexList[i].stop is None and indexList[i].step is None:
+                        sets.append(self.SetNames[i])
+                    else:
+                        sets.append("S" + str(i))
+                else:
+                    sets.append("S" + str(i))
+            #Puick the elements
             if self._DimDesc:
                 if self._DimDesc[i]:
                     if isinstance(indexList[i],list):
@@ -406,10 +418,31 @@ class Header(HeaderData):
                     SetElements.append(None)
             else:
                 SetElements=None
-        array= self._DataObj[tuple(indexList)]
+# Deal with advanced indexing
+        newinds, shape = self.makeNPIndex(indexList)
+        array= np.reshape(self._DataObj[newinds],tuple(shape))
 
         return self.HeaderFromData(self._mkHeaderName(), array, label=label, CName=CName,
                                    sets=sets, SetElements=SetElements)
+
+    def makeNPIndex(self, indexList):
+        if any([isinstance(item, list) for item in indexList]):
+            shape = [];
+            newinds = []
+            for i, item in enumerate(indexList):
+                if isinstance(item, int):
+                    newinds.append([item])
+                elif isinstance(item, slice):
+                    tmp = [i for i in range(0, self._DataObj.shape[i])]
+                    newinds.append(tmp[item])
+                    shape.append(len(newinds[-1]))
+                elif isinstance(item, list):
+                    newinds.append(item)
+                    shape.append(len(newinds[-1]))
+            numpyInd = np.ix_(*newinds)
+        else:
+            numpyInd = tuple(indexList)
+        return numpyInd, shape
 
     def __rsub__(self, other):
         op="Subtraction"
@@ -498,7 +531,7 @@ class Header(HeaderData):
         return self.HeaderFromData(self._mkHeaderName(), newarray, label="Sub Result", CName="Divide",
                                    sets=self.SetNames, SetElements=[self.SetElements[nam] for nam in self.SetNames])
 
-    def __pow__(self,power):
+    def __pow__(self,other):
         op="Power"
         if isinstance(other,Header):
             self._verifyHeaders(op, other)
@@ -634,6 +667,15 @@ class Header(HeaderData):
             newarray = npfunction(Header.DataObj)
             newSet=[]
         return cls.HeaderFromData(cls._mkHeaderName(),array=newarray,sets=newSet,SetElements=Header.SetElements)
+
+    def setNameToIndex(self, axis):
+        nsets = self._setNames.count(axis)
+        if nsets == 0: raise Exception(
+            "Setname " + axis + " is invalid. Available Sets are:" + ",".join(self._setNames))
+        if nsets > 1: raise Exception(
+            "Setname " + axis + " appears in more than one dimensions. Need to use int instead")
+        myaxis = self._setNames.index(axis)
+        return myaxis
 
 
 
