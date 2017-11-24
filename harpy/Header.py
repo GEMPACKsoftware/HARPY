@@ -64,10 +64,10 @@ class Header(HeaderData):
 
     @classmethod
     def HeaderFromConstant(cls, name, label=None, CName=None,sets=None,SetElements=None, dims=None, value=None):
-        if sets is None and dims is None:
-            raise Exception("Header from constant needs either sets or dims")
-        if not (sets is None or dims is None):
-            raise Exception("Header from constant can only have sets or dims but not both")
+        if SetElements is None and dims is None:
+            raise Exception("Header from constant needs either SetElements or dims")
+        if not (SetElements is None or dims is None):
+            raise Exception("Header from constant can only have SetElements or dims but not both")
         if not isinstance(value,(int,float)):
             raise Exception("value must be integer float")
         if value is None: value=0.0
@@ -112,7 +112,8 @@ class Header(HeaderData):
         cls.SetNames=sets
         if sets:
             if isinstance(SetElements,list):
-                if not isinstance(SetElements[0],list): raise Exception("Set Elements must be list of list of element names, received only list of element names")
+                if not (isinstance(SetElements[0],list) or SetElements[0] is None):
+                    raise Exception("Set Elements must be list of list of element names, received only list of element names")
                 cls.SetElements=dict(zip(sets,SetElements))
             elif isinstance(SetElements,dict) : cls.SetElements= SetElements
             else: raise Exception("Set Elements have to be a list of lists (in set order) or a dict mapping sets to elements")
