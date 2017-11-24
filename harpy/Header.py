@@ -348,8 +348,7 @@ class Header(HeaderData):
         else:
             ilist = self.itemList_to_intIndex(item)
 
-        newinds, = self.makeNPIndex(ilist)
-
+        newinds, shape = self.makeNPIndex(ilist)
         if isinstance(value,Header):
             self._DataObj[newinds]=value.DataObj
         elif isinstance(value,(int,np.ndarray,float)):
@@ -420,15 +419,17 @@ class Header(HeaderData):
                 SetElements=None
 # Deal with advanced indexing
         newinds, shape = self.makeNPIndex(indexList)
-        array= np.reshape(self._DataObj[newinds],tuple(shape))
+        if shape:
+            array= np.reshape(self._DataObj[newinds],tuple(shape))
+        else:
+            array=self._DataObj[newinds]
 
         return self.HeaderFromData(self._mkHeaderName(), array, label=label, CName=CName,
                                    sets=sets, SetElements=SetElements)
 
     def makeNPIndex(self, indexList):
         if any([isinstance(item, list) for item in indexList]):
-            shape = [];
-            newinds = []
+            newinds = []; shape=[]
             for i, item in enumerate(indexList):
                 if isinstance(item, int):
                     newinds.append([item])
@@ -441,7 +442,11 @@ class Header(HeaderData):
                     shape.append(len(newinds[-1]))
             numpyInd = np.ix_(*newinds)
         else:
+            shape = None
             numpyInd = tuple(indexList)
+            print (indexList)
+            print (numpyInd)
+
         return numpyInd, shape
 
     def __rsub__(self, other):
@@ -510,6 +515,8 @@ class Header(HeaderData):
         if isinstance(other,Header):
             self._verifyHeaders(op, other)
             newarray=other.DataObj/self.DataObj
+        elif isinstance(other,np.ndarray):
+            newarray = other / self.DataObj
         elif isinstance(other,(int,float)):
             newarray=other/self.DataObj
         else:
@@ -523,6 +530,8 @@ class Header(HeaderData):
         if isinstance(other,Header):
             self._verifyHeaders(op, other)
             newarray=self.DataObj/other.DataObj
+        elif isinstance(other, np.ndarray):
+            newarray=self.DataObj/other
         elif isinstance(other,(int,float)):
             newarray=self.DataObj/other
         else:
@@ -645,11 +654,7 @@ class Header(HeaderData):
     def _reduce(cls,Header,axis=None,npfunction=None):
         if not axis is None:
             if isinstance(axis,str):
-                nsets=Header._setNames.count(axis)
-                print (Header._setNames)
-                if nsets ==0: raise Exception("Setname "+axis+" is invalid. Available Sets are:"+",".join(Header._setNames))
-                if nsets > 1: raise Exception("Setname "+axis+" appears in more than one dimensions. Need to use int instead")
-                myaxis=Header._setNames.index(axis)
+                myaxis = Header.setNameToIndex(axis)
             elif isinstance(axis,int):
                 if axis > len(Header._setNames) -1 : raise  Exception("Axis out of range")
                 myaxis=axis
