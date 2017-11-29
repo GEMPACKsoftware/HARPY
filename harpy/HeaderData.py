@@ -14,6 +14,7 @@ class HeaderData(object):
         self._DimDesc = None
         self._Cname = ' '
         self._DataObj = None
+        self._role = ''
         self.DataDimensions = []
         self._HeaderName = ''
         self.VersionOnFile = 0
@@ -23,14 +24,18 @@ class HeaderData(object):
         self.f.seek(pos)
 
         newpos, name = self.f.nextHeader()
-        if newpos != pos or self._HeaderName != name: raise Exception(
+        if newpos != pos or self._HeaderName != name.strip(): raise Exception(
             "Header " + self._HeaderName + "not at indicated position")
 
         Version, DataType, self.StorageType, self._LongName, self.FileDims = self.f.parseSecondRec(name)
 
         if Version == 1:
+            self._role="data"
             if DataType == '1C':
                 readHeader1C(self)
+                if self._LongName.lower().startswith('set '):
+                    self._role = 'set'
+                    self._setNames= [self._LongName.split()[1]]
             elif DataType == 'RE':
                 self.hasElements=True
                 readHeader7D(self, True)
@@ -40,6 +45,8 @@ class HeaderData(object):
                 readHeader2D(self, 'f')
             elif DataType == '2I':
                 readHeader2D(self, 'i')
+
+
 
     def _writeHeader(self):
 
