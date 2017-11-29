@@ -24,7 +24,6 @@ class Header(HeaderData):
     Header objects permit operation such as indexing and basic mathematical operations, +,-,*,/
 
     """
-    DataType = ''
 
     def __init__(self, HeaderName=''):
         """
@@ -33,6 +32,7 @@ class Header(HeaderData):
 
         HeaderData.__init__(self)
         self.is_valid = True
+        self.DataType=''
         self.Error = ''
         self._HeaderName = HeaderName
 
@@ -134,7 +134,9 @@ class Header(HeaderData):
         """
         setLabel="Set "+SName
         if label:setLabel=setLabel+" "+label
-        return cls.HeaderFromData(name, array, setLabel)
+        myHeader=cls.HeaderFromData(name, array, setLabel)
+        myHeader._role="set"
+        return myHeader
 
 
     def HeaderToFile(self,HARFile):
@@ -189,7 +191,7 @@ class Header(HeaderData):
     def HeaderName(self, string4):
         if not isinstance(string4, str): raise Exception('Name not a string')
         if not len(string4) <= 4: raise Exception('Header name has to be shorter than 5. Name is '+string4)
-        self._HeaderName = string4
+        self._HeaderName = string4.strip()
 
     @property
     def HeaderLabel(self):
@@ -202,6 +204,9 @@ class Header(HeaderData):
     @HeaderLabel.setter
     def HeaderLabel(self, string70):
         if not isinstance(string70, str): raise Exception('Name not a string')
+        if self._role=="set":
+            if not string70.lower().startswith("set"):
+                string70=" ".join(self.HeaderLabel.split()[0:2])+" "+string70
         if not len(string70) <= 70: raise Exception('Header label has to be shorter than 70')
         self._LongName=string70.ljust(70)
 
@@ -249,6 +254,8 @@ class Header(HeaderData):
         Property to retrive or set a pointer from/to the Set Names associated with the dimensions (list(str) with len of rank array)
         :rtype: list(str)
         """
+        if self._role=="set":
+            return [self.HeaderLabel.split()[1]]
         return self._setNames
     @SetNames.setter
     def SetNames(self,names):
@@ -278,7 +285,10 @@ class Header(HeaderData):
         The getter returns a dictionary of the form (set:[Elelement List])
         The setter expects a dict of the same form. If no elements are associated with a dimension None can be passed
         instead of a list.
+        If it was a set definition it obtains the information from the stored data
         """
+        if self._role=="set":
+            return {self.HeaderLabel.split()[1] : [str(name.strip()) for name in self.DataObj]}
         return dict(zip(self._setNames, self._DimDesc))
     @SetElements.setter
     def SetElements(self,elDict):
