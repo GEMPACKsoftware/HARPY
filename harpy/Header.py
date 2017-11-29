@@ -1,4 +1,4 @@
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, division
 from .HeaderData import HeaderData
 import numpy as np
 import sys
@@ -482,6 +482,8 @@ class Header(HeaderData):
         if isinstance(other,Header):
             self._verifyHeaders(op, other)
             newarray=self.DataObj+other.DataObj
+        elif isinstance(other, np.ndarray):
+            newarray = self.DataObj + other
         elif isinstance(other,(int,float)):
             newarray=self.DataObj+other
         else:
@@ -502,6 +504,8 @@ class Header(HeaderData):
         if isinstance(other,Header):
             self._verifyHeaders(op, other)
             newarray=self.DataObj*other.DataObj
+        elif isinstance(other, np.ndarray):
+            newarray = self.DataObj * other
         elif isinstance(other,(int,float)):
             newarray=self.DataObj*other
         else:
@@ -509,7 +513,37 @@ class Header(HeaderData):
 
         return self.HeaderFromData(self._mkHeaderName(), newarray, label="Sub Result", CName="Multiply",
                                    sets=self.SetNames, SetElements=[self.SetElements[nam] for nam in self.SetNames])
-    def __rdiv__(self, other):
+    def __rfloordiv__(self, other):
+        op="Division"
+        if isinstance(other,Header):
+            self._verifyHeaders(op, other)
+            newarray=other.DataObj//self.DataObj
+        elif isinstance(other,np.ndarray):
+            newarray = other // self.DataObj
+        elif isinstance(other,(int,float)):
+            newarray=other//self.DataObj
+        else:
+            raise Exception("Only Header or scalar allowed in division")
+
+        return self.HeaderFromData(self._mkHeaderName(), newarray, label="Sub Result", CName="Divide",
+                                   sets=self.SetNames, SetElements=[self.SetElements[nam] for nam in self.SetNames])
+
+    def __floordiv__(self, other):
+        op="Division"
+        if isinstance(other,Header):
+            self._verifyHeaders(op, other)
+            newarray=self.DataObj//other.DataObj
+        elif isinstance(other, np.ndarray):
+            newarray=self.DataObj//other
+        elif isinstance(other,(int,float)):
+            newarray=self.DataObj//other
+        else:
+            raise Exception("Only Header or scalar allowed in division")
+
+        return self.HeaderFromData(self._mkHeaderName(), newarray, label="Sub Result", CName="Divide",
+                                   sets=self.SetNames, SetElements=[self.SetElements[nam] for nam in self.SetNames])
+
+    def __rtruediv__(self, other):
         op="Division"
         if isinstance(other,Header):
             self._verifyHeaders(op, other)
@@ -524,8 +558,8 @@ class Header(HeaderData):
         return self.HeaderFromData(self._mkHeaderName(), newarray, label="Sub Result", CName="Divide",
                                    sets=self.SetNames, SetElements=[self.SetElements[nam] for nam in self.SetNames])
 
-    def __div__(self, other):
-        op="Division"
+    def __truediv__(self, other):
+        op="TrueDivision"
         if isinstance(other,Header):
             self._verifyHeaders(op, other)
             newarray=self.DataObj/other.DataObj
@@ -544,6 +578,8 @@ class Header(HeaderData):
         if isinstance(other,Header):
             self._verifyHeaders(op, other)
             newarray=self.DataObj**other.DataObj
+        elif isinstance(other, np.ndarray):
+            newarray = self.DataObj ** other
         elif isinstance(other,(int,float)):
             newarray=self.DataObj**other
         else:
