@@ -207,7 +207,9 @@ class Header(HeaderData):
         if self._role=="set":
             if not string70.lower().startswith("set"):
                 string70=" ".join(self.HeaderLabel.split()[0:2])+" "+string70
-        if not len(string70) <= 70: raise Exception('Header label has to be shorter than 70')
+        if not len(string70) <= 70:
+            #print ('Warning, Header Label too long, only using70 chars')
+            string70=string70[0:70]
         self._LongName=string70.ljust(70)
 
     @property

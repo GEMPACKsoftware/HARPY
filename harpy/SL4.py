@@ -20,7 +20,7 @@ class SL4(object):
 
     @property
     def sets(self):
-        return self.sets
+        return self._sets
     @sets.setter
     def sets(self):
         raise Exception ("Sets in SL4 class cannot be assigned")
@@ -38,12 +38,12 @@ class SL4(object):
     def decode_SL4(self):
 
         #collect the set information. Not sure whether intertemporals work yet
-        setNames =   self.HARobj.getHeader("STNM")
-        setSizes =   self.HARobj.getHeader("SSZ ")
-        setLabels  = self.HARobj.getHeader("STLB")
-        setElStat =  self.HARobj.getHeader("ELST")
-        setEls =     self.HARobj.getHeader("STEL")
-        setElPtr =   self.HARobj.getHeader("ELAD")
+        setNames =   self.HARobj.getHeader("STNM",getDeepCopy=False)
+        setSizes =   self.HARobj.getHeader("SSZ ",getDeepCopy=False)
+        setLabels  = self.HARobj.getHeader("STLB",getDeepCopy=False)
+        setElStat =  self.HARobj.getHeader("ELST",getDeepCopy=False)
+        setEls =     self.HARobj.getHeader("STEL",getDeepCopy=False)
+        setElPtr =   self.HARobj.getHeader("ELAD",getDeepCopy=False)
 
         self._sets=[name.strip() for name in setNames.DataObj.tolist()]
         nsets=len(self._sets)
@@ -55,17 +55,17 @@ class SL4(object):
                 self.setHeaders[self._sets[i]]=Header.SetHeaderFromData("S%03i" % i, setEls.DataObj[start:end], self._sets[i], setLabels.DataObj[i])
 
         # Get the common header needed to extract the variable
-        varNames=  self.HARobj.getHeader("VARS")
-        varDims =  self.HARobj.getHeader("VCNA")
-        varSetPtr =  self.HARobj.getHeader("VCAR")
-        varLabel= self.HARobj.getHeader("VCLB")
-        varSizeEnd = self.HARobj.getHeader("ORND")
-        varSizeExo = self.HARobj.getHeader("OREX")
-        varExoList = self.HARobj.getHeader("OREL")
-        cumResCom = self.HARobj.getHeader("CMND")
-        cumResPtr = self.HARobj.getHeader("PCUM")
-        shockPtr  = self.HARobj.getHeader("PSHK")
-        shockVal  = self.HARobj.getHeader("SHOC")
+        varNames=  self.HARobj.getHeader("VARS",getDeepCopy=False)
+        varDims =  self.HARobj.getHeader("VCNA",getDeepCopy=False)
+        varSetPtr =  self.HARobj.getHeader("VCAR",getDeepCopy=False)
+        varLabel= self.HARobj.getHeader("VCLB",getDeepCopy=False)
+        varSizeEnd = self.HARobj.getHeader("ORND",getDeepCopy=False)
+        varSizeExo = self.HARobj.getHeader("OREX",getDeepCopy=False)
+        varExoList = self.HARobj.getHeader("OREL",getDeepCopy=False)
+        cumResCom = self.HARobj.getHeader("CMND",getDeepCopy=False)
+        cumResPtr = self.HARobj.getHeader("PCUM",getDeepCopy=False)
+        shockPtr  = self.HARobj.getHeader("PSHK",getDeepCopy=False)
+        shockVal  = self.HARobj.getHeader("SHOC",getDeepCopy=False)
 
         #prepare the different results. By default add cumulative. If subtatoals are present append them to the lists
         resultsSet=["Cumulative"]
@@ -88,6 +88,7 @@ class SL4(object):
             ndim=varDims.DataObj[i,0]
             if ndim>0:
                 varSetDict[self._variables[i]]=setNames.DataObj[[j - 1 for j in varSetPtr.DataObj[setPos:setPos + ndim, 0]]].tolist()
+                varSetDict[self._variables[i]]=[name.strip() for name in varSetDict[self._variables[i]]]
                 setPos+=ndim
             else:
                 varSetDict[self._variables[i]]=[]
@@ -99,20 +100,19 @@ class SL4(object):
             # Assemble the data into a vector (subtotals are appended to the list as they are in the results* Lists)
             outDataList=[]
             for DataHead,ShockComHead,ShockListHead in zip(resultsDataHeaders, resultsShockComponents, resultsShockList):
-                cumRes=self.HARobj.getHeader(DataHead)
-                shockCom = self.HARobj.getHeader(ShockComHead)
-                shockList = self.HARobj.getHeader(ShockListHead)
+                cumRes=self.HARobj.getHeader(DataHead,getDeepCopy=False)
+                shockCom = self.HARobj.getHeader(ShockComHead,getDeepCopy=False)
+                shockList = self.HARobj.getHeader(ShockListHead,getDeepCopy=False)
 
                 start = cumResPtr.DataObj[i, 0] - 1
                 end = start + cumResCom.DataObj[i, 0]
-                Data = cumRes.DataObj[start:end, 0]
+                Data = np.asfortranarray(cumRes.DataObj[start:end, 0])
 
                 nshk = shockCom.DataObj[i, 0]
                 if nexo != 0 and nendo != 0:
                     insertMask=[]
                     for j in range(nexoUsed, nexoUsed+ nexo):
                         insertMask.append(varExoList.DataObj[j,0]-(j-nexoUsed+1))
-                    nexoUsed+= nexo
 
                     flatData=np.insert(Data,insertMask,0)
 
@@ -124,9 +124,11 @@ class SL4(object):
                     self.insertShocks(flatData, i, nshk, nexo, shockList, shockPtr, shockVal)
                 outDataList.append(flatData)
 
+            if nexo != 0 and nendo != 0: nexoUsed += nexo
+
             flatData=np.concatenate(outDataList)
 
-            varSets=[thisSet for thisSet in varSetDict[self._variables[i]]]
+            varSets=[thisSet.strip() for thisSet in varSetDict[self._variables[i]]]
 
             simSizes=tuple([self.setHeaders[thisSet].DataObj.shape[0] for thisSet in varSetDict[self._variables[i]]])
             setElDict={}
@@ -139,14 +141,16 @@ class SL4(object):
             self.variableDict[self._variables[i]]=Header.HeaderFromData(name, finalData, varLabel.DataObj[i][0:70], self._variables[i].strip()[0:12], varSets, setElDict)
 
     def appendSubtotals(self, resultsDataHeaders, resultsSet, resultsShockComponents, resultsShockList):
-        nresults = self.HARobj.getHeader("STLS").DataObj[0, 0]
+        nresults = self.HARobj.getHeader("STLS",getDeepCopy=False).DataObj[0, 0]
         for i in range(1, nresults + 1):
             resultsDataHeaders.append("%03iS" % i)
             resultsShockComponents.append("%03iC" % i)
             resultsShockList.append("%03iL" % i)
-            resultsSet.append("Subtotal%03i" % i)
+            #resultsSet.append("Subtotal%03i" % i)
         description = ["Cumulative Results"]
-        description.extend(self.HARobj.getHeader("STDS").DataObj.tolist())
+        description.extend(self.HARobj.getHeader("STDS",getDeepCopy=False).DataObj.tolist())
+        for name in self.HARobj.getHeader("STDS",getDeepCopy=False).DataObj.tolist():
+            resultsSet.append(str(name) if len(name) <= 12 else str(name)[0:12])
         self.SimDescHead = Header.HeaderFromData("DESC", np.array(description),
                                                  "Content of results, i.e. cumlative and subtotal content", "",
                                                  ["#RESULTS"], [resultsSet])
