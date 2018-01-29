@@ -3,6 +3,9 @@ from .HeaderCommonIO import *
 
 
 class HeaderData(object):
+    """TODO: Suggestion - merge HeaderData and Header class. Appears to be a if and only if existence relationship \
+    between them - i.e. is it ever the case that there is a Header without HeaderData? ... or \
+    vice-versa?"""
 
     def __init__(self):
         self.f = None
@@ -21,14 +24,19 @@ class HeaderData(object):
         self.hasElements=False
 
     def _readHeader(self, pos):
+        """TODO: Suggestion - This method relies on the \'nextHeader\' method to work, which is in the HAR_IO class, \
+        but will only be available if a Header object has been initialised. Basically, the superclass relies on the \
+        existence of a subclass which is an improper dependency relationship."""
+        # type: (int) -> ?
         self.f.seek(pos)
 
-        newpos, name = self.f.nextHeader()
-        if newpos != pos or self._HeaderName != name.strip(): raise Exception(
-            "Header " + self._HeaderName + "not at indicated position")
+        newpos, name = self.f.nextHeader() # This relies on a subclass creating the 'f' object, which declares this method
+        if newpos != pos or self._HeaderName != name.strip():
+            raise RuntimeError("Header " + self._HeaderName + "not at indicated position")
 
         Version, DataType, self.StorageType, self._LongName, self.FileDims = self.f.parseSecondRec(name)
 
+        # readHeader methods alter HeaderData._DataObj, possibly HeaderData.f object
         if Version == 1:
             self._role="data"
             if DataType == '1C':
