@@ -28,6 +28,7 @@ else:
 
 
     def fb(x):
+        # type: str -> str
         if not x: return x
         return x.decode('utf-8')
 
@@ -43,10 +44,11 @@ class HAR_IO(object):
     def __init__(self, fname, mode):
         # type: (str) -> HAR_IO
         """
-
+        :arg (str) fname: Name of file to open.
+        :arg (char) mode: 'r': read, 'w': write or 'a': append.
         :rtype: HAR_IO
         """
-        if mode not in "arw": raise Exception("Unknwon mode to open file")
+        if mode not in "arw": raise Exception("Unknown mode to open file")
         self.f = open(fname, mode+'+b')
         self.endian = "="
         self.header = "i"
@@ -55,6 +57,7 @@ class HAR_IO(object):
         self.f.close()
 
     def nextHeader(self):
+        # type: () -> (int, str)
         pos = self.f.tell()
         data = '';
         Hpos = 0
@@ -419,6 +422,7 @@ class HAR_IO(object):
         self.f.write(struct.pack('=i', nbyte))
 
     def read2Dobject(self, array, dtype):
+        # type: (numpy.array?, datatype) -> None
         nrec = 50
         arraySize = array.size
         nread = 0
@@ -494,6 +498,7 @@ class HAR_IO(object):
             raise IOError('File Corrupted, start int does not match end int ')
 
     def getEntrySize(self):
+        # type: () -> int
         data = self.f.read(4)
         if not data: return None
         return struct.unpack(self.endian + self.header, data)[0]
