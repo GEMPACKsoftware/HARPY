@@ -66,12 +66,13 @@ class HeaderData(object):
             writeHeader2D(self)
         elif '<U' in typeString or '|S' in typeString:
             if self._DataObj.ndim > 1:
-                print('"' + self.name + '" can not be written as Charcter arrays ndim>1 are not yet supported')
+                print('"' + self._HeaderName + '" can not be written as Charcter arrays ndim>1 are not yet supported')
                 return
             writeHeader1C(self)
         else:
-            raise Exception('Can not write data in Header: "' +
-                            self.name + '" as data style does not match any known Header type')
+            print(typeString)
+            raise TypeError('Can not write data in Header: "' +
+                            self._HeaderName + '" as data style does not match any known Header type')
 
     def __str__(self):
         outList=[]
