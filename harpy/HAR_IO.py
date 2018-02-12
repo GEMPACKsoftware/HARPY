@@ -4,6 +4,7 @@ import sys
 import os
 import numpy as np
 import math
+from collections import OrderedDict
 
 __docformat__ = 'restructuredtext en'
 
@@ -38,7 +39,7 @@ MaxDimVersion = [0, 7, 0, 14]
 
 
 class HAR_IO(object):
-    _HeaderPos = {}
+    _HeaderPos = OrderedDict()
     _HeaderDict = {}
 
     def __init__(self, fname, mode):
@@ -52,6 +53,28 @@ class HAR_IO(object):
         self.f = open(fname, mode+'+b')
         self.endian = "="
         self.header = "i"
+        self._collectHeaders()
+
+    def getFileName(self):
+        return self.f.name
+
+    def _collectHeaders(self):
+        """
+        Find all Header on a file. This is a private method and does not take any arguments
+        """
+
+        self.f.seek(0)
+        while True:
+            pos, name = self.nextHeader()
+
+            if not name: break
+            self._HeaderPos[name.strip()]=pos
+
+    def getHeaderNames(self):
+        return list(self._HeaderPos.keys())
+
+    def getHeaderPos(self, name):
+        return self._HeaderPos[name]
 
     def __del__(self):
         self.f.close()

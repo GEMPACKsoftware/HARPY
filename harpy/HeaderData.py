@@ -1,5 +1,5 @@
 from __future__ import print_function, absolute_import
-from .HeaderCommonIO import *
+from .HeaderCommonIO import readHeader1C, readHeader7D, readHeader2D, writeHeader7D, writeHeader2D, writeHeader1C
 
 
 class HeaderData(object):
@@ -39,7 +39,7 @@ class HeaderData(object):
 
         Version, DataType, self.StorageType, self._LongName, self.FileDims = self.f.parseSecondRec(name)
 
-        # readHeader methods alter HeaderData._DataObj, possibly HeaderData.f object
+        # readHeaderXX methods alter HeaderData._DataObj, possibly HeaderData.f object
         if Version == 1:
             self._role="data"
             if DataType == '1C':
