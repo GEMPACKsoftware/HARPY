@@ -1,5 +1,8 @@
 from __future__ import print_function, absolute_import, division
 from .HeaderData import HeaderData
+from .HAR_IO import HAR_IO
+from .HeaderCommonIO import readHeader1C, readHeader7D, readHeader2D
+# ^^ Including them explicitly makes it easier to identify where they've come from
 import numpy as np
 import sys
 import traceback
@@ -26,20 +29,21 @@ class Header(HeaderData):
 
     """
 
-    def __init__(self, HeaderName=''):
+    def __init__(self, HeaderName='', f=None):
         """
         Inherits from HeaderData
         :rtype: Header
         """
-
-        HeaderData.__init__(self)
+        HeaderData.__init__(self) # Does not execute any HeaderData methods
         self.is_valid = True
         self.DataType=''
         self.Error = ''
+        self.f = f
         self._HeaderName = HeaderName
 
-    @classmethod
-    def HeaderFromFile(cls, name, pos, HARFile):
+    @staticmethod
+    def HeaderFromFile(name, HARFile):
+        # type: (str, HAR_IO) -> Header
         """
         Reads a Header from file.
         This function should only be invoked from class HAR as this knows the position of the Header
@@ -49,17 +53,53 @@ class Header(HeaderData):
         :param (HAR_IO) HARFile: file object containing the Header
         :return: Header object
         """
-        """TODO: Suggestion - change from classmethod to staticmethod. Not clear why \'cls\' argument is being passed, \
-        # given that it is immediately overwritten by a call to Header() on the first line and therefore redundant..."""
-        cls=Header()
-        cls.f=HARFile
-        cls._HeaderName=name
+        ret = Header(HeaderName=name, f=HARFile)
+        assert isinstance(ret, Header)  # Something is seriously wrong if this raises...
 
         try:
-            cls._readHeader(pos) # Method inherited from HeaderData class
+            pos = ret.f.getHeaderPos(name)
+            ret._readHeader(pos)  # Method inherited from HeaderData class
         except:
-            cls._invalidateHeader()
-        return cls
+            ret._invalidateHeader()
+
+        assert isinstance(ret, Header)  # Something screwed up reading the header...
+        return ret
+
+    def _readHeader(self, pos):
+        # type: (int) -> None
+
+        try:
+            assert isinstance(self.f, HAR_IO)
+        except AssertionError:
+            raise TypeError("Header object has not been provided with type 'HAR_IO' object for attribute f.")
+
+        self.f.seek(pos)
+
+        newpos, name = self.f.nextHeader() # This relies on a subclass creating the 'f' object, which declares this method
+        if newpos != pos or self._HeaderName != name.strip():
+            raise RuntimeError("Header " + self._HeaderName + "not at indicated position")
+
+        Version, DataType, self.StorageType, self._LongName, self.FileDims = self.f.parseSecondRec(name)
+
+        # readHeader methods alter self._DataObj, self.RealDim, self.DataDimension, self.StorageType possibly self.f
+        if Version == 1:
+            self._role="data"
+            if DataType == '1C':
+                readHeader1C(self)
+                if self._LongName.lower().startswith('set '):
+                    self._role = 'set'
+                    self._setNames= [self._LongName.split()[1]]
+            elif DataType == 'RE':
+                self.hasElements=True
+                readHeader7D(self, True)
+            elif DataType == 'RL':
+                readHeader7D(self, False)
+            elif DataType == '2R':
+                readHeader2D(self, 'f')
+            elif DataType == '2I':
+                readHeader2D(self, 'i')
+
+        assert isinstance(self, Header)
 
     def _invalidateHeader(self):
         traceback.print_exc()
