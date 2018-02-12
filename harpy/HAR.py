@@ -52,7 +52,15 @@ class HAR(object):
 
         if not name in self._HeaderDict:
             self._HeaderDict[name] = Header.HeaderFromFile(name, self._HeaderPosDict[name], self.f)
-            assert(isinstance(self._HeaderDict[name], Header))
+            try:
+                assert(isinstance(self._HeaderDict[name], Header))
+            except AssertionError:
+                raise TypeError("Invalid return type - return type attempting to get " +
+                                "header '%s' is of type %s (id:%d), not '%s' (id:%d)." % (name,
+                                                                                          self._HeaderDict[name].__class__,
+                                                                                          id(self._HeaderDict[name].__class__),
+                                                                                          Header,
+                                                                                          id(Header)))
 
         if getDeepCopy:
             return self._HeaderDict[name].copy_header()
