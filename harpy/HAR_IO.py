@@ -5,6 +5,7 @@ import os
 import numpy as np
 import math
 from collections import OrderedDict
+from .HeaderCommonIO import readHeader1C, readHeader7D, readHeader2D, read7DArray, read2DArray, read1CArray
 
 __docformat__ = 'restructuredtext en'
 
@@ -53,6 +54,7 @@ class HAR_IO(object):
         self.f = open(fname, mode+'+b')
         self.endian = "="
         self.header = "i"
+        self._HeaderPos = OrderedDict()
         self._collectHeaders()
 
     def getFileName(self):
@@ -69,6 +71,43 @@ class HAR_IO(object):
 
             if not name: break
             self._HeaderPos[name.strip()]=pos
+
+    def readHeaderByName(self, header_name, parent_header=None):
+        # type: (str) -> np.ndarray
+
+        pos = self._HeaderPos[header_name]
+        self.f.seek(pos)
+
+        newpos, name = self.nextHeader() # This relies on a subclass creating the 'f' object, which declares this method
+        if newpos != pos or header_name != name.strip():
+            raise RuntimeError("Header " + header_name + "not at indicated position")
+
+        Version, DataType, self.StorageType, self._LongName, self.FileDims = self.parseSecondRec(name)
+
+        # readHeader methods alter self._DataObj, self.RealDim, self.DataDimension, self.StorageType possibly self.f
+        if Version == 1:
+            self._role="data"
+            if DataType == '1C':
+                array, RealDim, DataDimension = read1CArray(self)
+                parent_header.RealDim = RealDim
+                parent_header.DataDimension = DataDimension
+                # TODO: Clean up the previous two lines (removing parent_header as a dependency)
+                if self._LongName.lower().startswith('set '):
+                    self._role = 'set'
+                    self._setNames= [self._LongName.split()[1]]
+            elif DataType == 'RE':
+                self.hasElements=True
+                array = read7DArray(self, hasSets=True)
+            elif DataType == 'RL':
+                array = read7DArray(self, hasSets=False)
+            elif DataType == '2R':
+                array = read2DArray(self, "f")
+            elif DataType == '2I':
+                array = read2DArray(self, "i")
+
+        assert isinstance(self, HAR_IO)
+        return array, self.StorageType, self._LongName, self.FileDims, self.hasElements, self._role, self._setNames
+
 
     def getHeaderNames(self):
         return list(self._HeaderPos.keys())
@@ -583,3 +622,7 @@ class HAR_IO(object):
                 start_index[inc_dim] = end_index[inc_dim]
                 end_index[inc_dim] = min(a.shape[inc_dim], end_index[inc_dim] + increment)
             yield start_index, end_index
+
+    def getSetNames(self):
+        _, SetList, _, _ = self.getSetElementInfoRecord()
+        return [name.strip() for name in SetList]

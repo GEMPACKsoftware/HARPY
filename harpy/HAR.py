@@ -26,7 +26,6 @@ class HAR(object):
         :param mode: "w" or "r" for write or read
         """
         self._HeaderDict = OrderedDict()
-
         self.f = HAR_IO(fname, mode)
         self._HeaderList = self.f.getHeaderNames()
 

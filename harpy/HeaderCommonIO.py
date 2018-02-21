@@ -57,6 +57,18 @@ def readHeader1C(Head):
     Head.DataDimension = [Head.FileDims[0]]
     Head._DataObj = np.ascontiguousarray(Head._DataObj)
 
+def read1CArray(parent_HAR_IO):
+    # type: ('harpy.HAR_IO.HAR_IO') -> None
+    RealDim = 1
+    array = np.chararray(tuple([parent_HAR_IO.FileDims[0]]),
+                         itemsize=parent_HAR_IO.FileDims[1],
+                         unicode=as_unicode)
+    parent_HAR_IO.readCharVec(array)
+
+    DataDimension = [parent_HAR_IO.FileDims[0]]
+    array = np.ascontiguousarray(array)
+    return array, RealDim, DataDimension
+
 
 def writeHeader1C(Head):
     # type: (HeaderData) -> None
@@ -78,7 +90,17 @@ def readHeader2D(Head, dtype):
     Head.f.read2Dobject(Head._DataObj, dtype)
     Head._DataObj = np.ascontiguousarray(Head._DataObj)
 
+def read2DArray(parent_HAR_IO, dtype):
+    # type: ('harpy.HAR_IO.HAR_IO',str) -> None
+    if parent_HAR_IO.StorageType == 'SPSE': raise Exception('Sparse storage not allowed on 2D data form')
+    if dtype == 'f':
+        array = np.ndarray(shape=parent_HAR_IO.FileDims[0:2], dtype=np.float32, order='F')
+    elif dtype == 'i':
+        array = np.ndarray(shape=parent_HAR_IO.FileDims[0:2], dtype=np.int32, order='F')
 
+    parent_HAR_IO.read2Dobject(array, dtype)
+    array = np.ascontiguousarray(array)
+    return array
 
 def writeHeader2D(Head):
     # type: (HeaderData) -> None
@@ -97,7 +119,7 @@ def writeHeader2D(Head):
     Head.f.write2Dobject(np.asfortranarray(Head._DataObj), dtype)
 
 # ======================================== 7D ===============================================
-def readHeader7D(Head, hasSets=True):
+def readHeader7D(Head, hasSets=True, set_names=None):
     # type: (HeaderData,bool) -> None
     if hasSets:
         readSets(Head)
@@ -112,6 +134,26 @@ def readHeader7D(Head, hasSets=True):
     else:
         Head._DataObj = Head.f.read7DSparseObj(Head._DataObj, 'f')
     Head._DataObj=np.ascontiguousarray(Head._DataObj)
+
+
+def read7DArray(
+        parent_HAR_IO,
+        hasSets=True,
+                ):
+    # type: (bool) -> None
+    if hasSets:
+        tmpDim = len(parent_HAR_IO.getSetNames())
+    else:
+        tmpDim = 7
+    array = np.ndarray(shape=parent_HAR_IO.FileDims[0:tmpDim], dtype=np.float32, order='F')
+    array.fill(0.0)
+
+    if parent_HAR_IO.StorageType == 'FULL':
+        array = parent_HAR_IO.read7DFullObj(array, 'f')
+    else:
+        array = parent_HAR_IO.read7DSparseObj(array, 'f')
+    array = np.ascontiguousarray(array)
+    return array
 
 
 def writeHeader7D(Head):

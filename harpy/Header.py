@@ -29,6 +29,12 @@ class Header(HeaderData):
 
     """
 
+    if sys.version_info < (3,):
+        as_unicode = False
+    else:
+        as_unicode = True
+
+
     def __init__(self, HeaderName='', f=None):
         """
         Inherits from HeaderData
@@ -38,7 +44,7 @@ class Header(HeaderData):
         self.is_valid = True
         self.DataType=''
         self.Error = ''
-        self.f = f
+        self.f = f # type: HAR_IO
         self._HeaderName = HeaderName
 
     @staticmethod
@@ -64,6 +70,18 @@ class Header(HeaderData):
 
         assert isinstance(ret, Header)  # Something screwed up reading the header...
         return ret
+
+    def _readHeaderByName(self, header_name):
+
+        try:
+            assert isinstance(self.f, HAR_IO)
+        except AssertionError:
+            raise TypeError("Header object has not been provided with type 'HAR_IO' object for attribute f.")
+
+        (self._DataObj, self.StorageType, self._LongName, \
+        self.FileDims, self.hasElements, self._role, self._setNames) = self.f.readHeaderByName(header_name,
+                                                                                               parent_header=self)
+
 
     def _readHeader(self, pos):
         # type: (int) -> None
@@ -785,13 +803,3 @@ class Header(HeaderData):
             setattr(new, k, copy.deepcopy(getattr(self, k)))
 
         return new
-
-
-
-
-
-
-
-
-
-
