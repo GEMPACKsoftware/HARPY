@@ -64,6 +64,7 @@ class Header(HeaderData):
 
         try:
             pos = ret.f.getHeaderPos(name)
+            print("Header '%s' position is: %d" %(name, pos))
             ret._readHeader(pos)  # Method inherited from HeaderData class
         except:
             ret._invalidateHeader()
@@ -92,10 +93,13 @@ class Header(HeaderData):
             raise TypeError("Header object has not been provided with type 'HAR_IO' object for attribute f.")
 
         self.f.seek(pos)
+        print(self.f.tell())
 
         newpos, name = self.f.nextHeader() # This relies on a subclass creating the 'f' object, which declares this method
         if newpos != pos or self._HeaderName != name.strip():
             raise RuntimeError("Header " + self._HeaderName + "not at indicated position")
+
+        print("Header._readHeader() newpos, name ", newpos, name)
 
         Version, DataType, self.StorageType, self._LongName, self.FileDims = self.f.parseSecondRec(name)
 

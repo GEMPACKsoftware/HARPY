@@ -6,6 +6,7 @@ import numpy as np
 import math
 from collections import OrderedDict
 from .HeaderCommonIO import readHeader1C, readHeader7D, readHeader2D, read7DArray, read2DArray, read1CArray
+import io
 
 __docformat__ = 'restructuredtext en'
 
@@ -43,7 +44,7 @@ class HAR_IO(object):
     _HeaderPos = OrderedDict()
     _HeaderDict = {}
 
-    def __init__(self, fname, mode):
+    def __init__(self, fname, mode, new_mode=False):
         # type: (str) -> HAR_IO
         """
         :arg (str) fname: Name of file to open.
@@ -121,6 +122,7 @@ class HAR_IO(object):
     def nextHeader(self):
         # type: () -> (int, str)
         pos = self.f.tell()
+        print("HAR_IO.nextHeader() ", pos)
         data = '';
         Hpos = 0
         while True:
@@ -136,6 +138,7 @@ class HAR_IO(object):
             pos = pos + 8 + nbyte
             self.f.seek(pos - 4)
             self.checkRead(nbyte)
+        print("HAR_IO.nextHeader() Hpos ", Hpos)
         return Hpos, fb(data)
 
     def writeHeaderName(self, name):
@@ -146,12 +149,17 @@ class HAR_IO(object):
     def parseSecondRec(self, name):
 
         secondRecordForm = self.endian + "4s2s4s70si"
+
         nbyte = self.getEntrySize()
 
         if not nbyte:
             raise Exception('Header "' + name + '" is last entry on file and does not contain additional information')
 
+        print("HAR_IO secondRecordForm ", secondRecordForm)
+
         Record = self.unpack_data(secondRecordForm, 'Second record corrupted in Header "' + name + '"')
+
+        print("HAR_IO Record ", Record)
 
         if fb(Record[0]) != '    ': raise Exception("Encountered characters at first four positions of 2nd Record")
 
@@ -178,6 +186,7 @@ class HAR_IO(object):
         if 84 + 4 * Record[4] != nbyte:
             raise Exception('Header "' + name + '" is corrupted at dimensions in second Record')
 
+        print("HAR_IO.parseSecondRec() self.f.tell() ", self.f.tell())
         Sizes = self.unpack_data(self.endian + "i" * Record[-1],
                                  "Could not read the associated dimensions in second record of Header" + name + '"')
 
@@ -524,6 +533,7 @@ class HAR_IO(object):
             nrec = nrec - 1
 
     def unpack_data(self, form, error, data=''):
+        print("HAR_IO.unpack_data() f.tell() ", self.f.tell())
         try:
             if not data:
                 data = self.f.read(struct.calcsize(form))
@@ -558,7 +568,9 @@ class HAR_IO(object):
         # type: () -> int
         data = self.f.read(4)
         if not data: return None
-        return struct.unpack(self.endian + self.header, data)[0]
+        tmp = struct.unpack(self.endian + self.header, data)[0]
+        # print("HAR_IO struct ", tmp)
+        return tmp
 
     def getEntry(self):
         nbyte = self.getEntrySize()
