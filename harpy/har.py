@@ -6,7 +6,7 @@ Created on Mar 02 11:11:36 2018
 """
 from collections import OrderedDict
 
-from .har_io import HAR_IO
+from .har_file_io import HAR_IO
 
 class HAR(object):
     """

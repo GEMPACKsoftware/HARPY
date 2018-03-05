@@ -49,7 +49,7 @@ class HarFileInfo(dict):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-class HAR_IO(object):
+class HarFileIO(object):
 
     def __init__(self, filename):
         # type: (str) -> HAR_IO
@@ -67,7 +67,7 @@ class HAR_IO(object):
 
     @staticmethod
     def readHeaderNames(filename: str):
-        return list(HAR_IO.readHarFileInfo(filename)["headers"].keys())
+        return list(HarFileIO.readHarFileInfo(filename)["headers"].keys())
 
     @staticmethod
     def readHarFileInfo(filename: str):
@@ -83,7 +83,7 @@ class HAR_IO(object):
             f.seek(0)
             while True:
                 # Read all header names
-                pos, name, end_pos = HAR_IO._readHeaderPosName(f)
+                pos, name, end_pos = HarFileIO._readHeaderPosName(f)
                 if not name:
                     break
                 hfi["headers"][name] = {"pos_name": pos, "pos_data": end_pos}
@@ -102,17 +102,17 @@ class HAR_IO(object):
         data = ''
         while True:
             Hpos = pos
-            nbyte = HAR_IO._getEntrySize(fp)
+            nbyte = HarFileIO._getEntrySize(fp)
             if not nbyte: break
             data = fp.read(4).strip()
             if data:
                 data += fp.read(nbyte - 4)
-                HAR_IO._checkRead(fp, nbyte)
+                HarFileIO._checkRead(fp, nbyte)
                 break
             data = None
             pos = pos + 8 + nbyte
             fp.seek(pos - 4)
-            HAR_IO._checkRead(fp, nbyte)
+            HarFileIO._checkRead(fp, nbyte)
         return Hpos, fb(data), fp.tell()
 
     @staticmethod
@@ -135,7 +135,7 @@ class HAR_IO(object):
 
     @staticmethod
     def _checkRead(fp, nbyte):
-        if HAR_IO._getEntrySize(fp) != nbyte:  # Must be int at end that says how long the entry was as well...
+        if HarFileIO._getEntrySize(fp) != nbyte:  # Must be int at end that says how long the entry was as well...
             import traceback
             traceback.print_stack()
             raise IOError('File Corrupted, start int does not match end int ')
@@ -163,19 +163,19 @@ class HAR_IO(object):
              header_dict["data_type"],
              header_dict["storage_type"],
              header_dict["long_name"],
-             header_dict["file_dims"]) = HAR_IO._getHeaderInfo(fp, header_name)
+             header_dict["file_dims"]) = HarFileIO._getHeaderInfo(fp, header_name)
 
             # # readHeader methods alter self._DataObj, self.RealDim, self.DataDimension, self.StorageType possibly self.f
             if header_dict["version"] == 1:
                 header_dict["header_type"] = "data"
                 if header_dict["data_type"] == '1C':
-                    header_dict["array"] = HAR_IO._read1CArray(fp, file_dims=header_dict["file_dims"])
+                    header_dict["array"] = HarFileIO._read1CArray(fp, file_dims=header_dict["file_dims"])
                     # if header_dict["long_name"].lower().startswith('set '):
                     #     header_dict["header_type"] = "set"
                     #     header_dict["_setNames"] = [header_dict["long_name"].split()[1]]
                 elif header_dict["data_type"] == 'RE':
                     header_dict["has_elements"] = True
-                    header_dict["array"] = HAR_IO._readREArray(fp, header_dict, file_dims=header_dict["file_dims"])
+                    header_dict["array"] = HarFileIO._readREArray(fp, header_dict, file_dims=header_dict["file_dims"])
                 # elif DataType == 'RL':
                 #     readHeader7D(self, False)
                 elif header_dict["data_type"] in ['2R', '2I']:
@@ -184,7 +184,7 @@ class HAR_IO(object):
                     else:
                         data_type = 'i'
 
-                    header_dict["array"] = HAR_IO._read2DArray(fp, data_type=data_type,
+                    header_dict["array"] = HarFileIO._read2DArray(fp, data_type=data_type,
                                                                file_dims=header_dict["file_dims"],
                                                                storage_type=header_dict["storage_type"])
 
@@ -201,9 +201,9 @@ class HAR_IO(object):
 
         secondRecordForm = "=4s2s4s70si"
 
-        nbyte = HAR_IO._getEntrySize(fp)
+        nbyte = HarFileIO._getEntrySize(fp)
 
-        Record = HAR_IO._unpack_data(fp, secondRecordForm)
+        Record = HarFileIO._unpack_data(fp, secondRecordForm)
 
         # print("har_io.getHeaderParams() Record ", Record)
 
@@ -233,9 +233,9 @@ class HAR_IO(object):
             raise ValueError('Header "' + name + '" is corrupted at dimensions in second Record')
 
         # print("har_io.getHeaderParams() fp.tell() ", fp.tell())
-        Sizes = HAR_IO._unpack_data(fp, "=" + ("i" * Record[-1]))
+        Sizes = HarFileIO._unpack_data(fp, "=" + ("i" * Record[-1]))
 
-        HAR_IO._checkRead(fp, nbyte)
+        HarFileIO._checkRead(fp, nbyte)
         return Version, DataType, StorageType, LongName, Sizes
 
     @staticmethod
@@ -275,9 +275,9 @@ class HAR_IO(object):
         dataFormStart = '=4siii'
 
         while NRec > 1:
-            nbyte = HAR_IO._getEntrySize(fp)
+            nbyte = HarFileIO._getEntrySize(fp)
 
-            V = HAR_IO._unpack_data(fp, dataFormStart)
+            V = HarFileIO._unpack_data(fp, dataFormStart)
 
             if fb(V[0]) != '    ':
                 raise IOError("Encountered characters at first four positions")
@@ -291,7 +291,7 @@ class HAR_IO(object):
 
             AllStr = fb(fp.read(V[3] * Clen))
 
-            if nbyte != HAR_IO._getEntrySize(fp):
+            if nbyte != HarFileIO._getEntrySize(fp):
                 raise IOError("I/O Error: sizes on 1C header do not match record length")
 
             for j, i in enumerate(range(0, V[3] * Clen, Clen)):
@@ -307,7 +307,7 @@ class HAR_IO(object):
                      # real_dim: int = 1,
                      ):
         # hd["real_dim"] = real_dim
-        array = HAR_IO._readCharVec(fp,
+        array = HarFileIO._readCharVec(fp,
                                     itemsize=file_dims[1],
                                     dtype="<U12",
                                     size=(file_dims[0],),
@@ -371,9 +371,9 @@ class HAR_IO(object):
         arraySize = array.size
         nread = 0
         while nread != arraySize:
-            nbyte = HAR_IO._getEntrySize(fp)
+            nbyte = HarFileIO._getEntrySize(fp)
             dataForm = "=4siiiiiii"
-            V = HAR_IO._unpack_data(fp, dataForm)
+            V = HarFileIO._unpack_data(fp, dataForm)
 
             if fb(V[0]) != '    ':
                 raise RuntimeError("Encountered characters at read2D loop")
@@ -387,10 +387,10 @@ class HAR_IO(object):
             ndata = xsize * ysize
             nread += ndata
             dataForm = "=" + str(ndata) + data_type_str
-            dat = HAR_IO._unpack_data(fp, dataForm)
+            dat = HarFileIO._unpack_data(fp, dataForm)
             array[V[4] - 1:V[5], V[6] - 1:V[7]] = np.array(dat).reshape(xsize, ysize, order='F')
 
-            if nbyte != HAR_IO._getEntrySize(fp):
+            if nbyte != HarFileIO._getEntrySize(fp):
                 raise RuntimeError('Header corrupted.')
 
         # array = HAR_IO._read2DObj(fp, data_type, file_dims)
@@ -409,7 +409,7 @@ class HAR_IO(object):
         """
 
         if hasSets:
-            (header_info["coeff_name"], header_info["sets"]) = HAR_IO._readSets(fp, file_dims=file_dims)
+            (header_info["coeff_name"], header_info["sets"]) = HarFileIO._readSets(fp, file_dims=file_dims)
 
             # print("har_io._read7DArray() set_names ", [set["name"] for set in header_info["sets"]])
 
@@ -423,18 +423,18 @@ class HAR_IO(object):
         # print("har_io._read7DArray() header_info[\"storage_type\"]", header_info["storage_type"])
         # print(header_info["storage_type"] == 'FULL')
         if header_info["storage_type"] == 'FULL':
-            array = HAR_IO._readREFullObj(fp, array, 'f')
+            array = HarFileIO._readREFullObj(fp, array, 'f')
         else:
-            array = HAR_IO._readRESparseObj(fp, array, 'f')
+            array = HarFileIO._readRESparseObj(fp, array, 'f')
         return np.ascontiguousarray(array)
 
     @staticmethod
     def _readREFullObj(fp, array, dtype):
 
-        nbyte = HAR_IO._getEntrySize(fp)
+        nbyte = HarFileIO._getEntrySize(fp)
         dataForm = '=4sii'
 
-        V = HAR_IO._unpack_data(fp, dataForm)
+        V = HarFileIO._unpack_data(fp, dataForm)
 
         if fb(V[0]) != '    ':
             raise Exception("Encountered characters at read7D[1]")
@@ -443,9 +443,9 @@ class HAR_IO(object):
         NDim = V[2]
         dataForm = "=" + ('i' * NDim)
 
-        V = HAR_IO._unpack_data(fp, dataForm)
+        V = HarFileIO._unpack_data(fp, dataForm)
 
-        if nbyte != HAR_IO._getEntrySize(fp):
+        if nbyte != HarFileIO._getEntrySize(fp):
             raise RuntimeError("Header corrupted read7D[0] @ %d" % fp.tell())
 
         oldshape = array.shape
@@ -453,22 +453,22 @@ class HAR_IO(object):
         idata = 0
 
         while nrec > 1:
-            nbyte = HAR_IO._getEntrySize(fp)
+            nbyte = HarFileIO._getEntrySize(fp)
             dataForm = '4s15i'
-            V = HAR_IO._unpack_data(fp, dataForm)
+            V = HarFileIO._unpack_data(fp, dataForm)
 
             if fb(V[0]) != '    ':
                 raise RuntimeError("Encountered characters at first four positions at)SetEl")
 
-            if nbyte != HAR_IO._getEntrySize(fp):
+            if nbyte != HarFileIO._getEntrySize(fp):
                 raise RuntimeError('read7D data[2] corrupted')
 
-            nbyte = HAR_IO._getEntrySize(fp)
+            nbyte = HarFileIO._getEntrySize(fp)
             ndata = (nbyte - 8) // struct.calcsize(dtype)
             dataForm = '4si' + str(ndata) + dtype
-            V = HAR_IO._unpack_data(fp, dataForm)
+            V = HarFileIO._unpack_data(fp, dataForm)
 
-            if nbyte != HAR_IO._getEntrySize(fp):
+            if nbyte != HarFileIO._getEntrySize(fp):
                 raise RuntimeError('read7D data[2])corrupted')
 
             if fb(V[0]) != '    ':
@@ -488,13 +488,13 @@ class HAR_IO(object):
         ElementList = []
         SetStatus = []
 
-        nbyte = HAR_IO._getEntrySize(fp)
+        nbyte = HarFileIO._getEntrySize(fp)
 
         # read the data, has to be in chunks as it is dependent on interanl size specifications
         dataForm = '=' + '4siii12si'
 
         # print("har_io._readSetElementInfoRecord() fp.tell() ", fp.tell())
-        V = HAR_IO._unpack_data(fp, dataForm)
+        V = HarFileIO._unpack_data(fp, dataForm)
 
         if fb(V[0]) != '    ':
             raise RuntimeError("Encountered characters at first four positions at SetEl")
@@ -507,22 +507,22 @@ class HAR_IO(object):
         else:
             dataForm = "=" + str(NSets * 12) + 's' + str(NSets) + 's' + str(NSets) + 'i' + 'i'
 
-        V = HAR_IO._unpack_data(fp, dataForm)
+        V = HarFileIO._unpack_data(fp, dataForm)
         if NSets > 0:
             SetNames = [fb(V[0][i:i + 12]) for i in range(0, NSets * 12, 12)]
             SetStatus = [fb(V[1][i:i + 1]) for i in range(0, NSets)]
 
         Nexplicit = V[-1]
         dataForm = '=' + str(Nexplicit * 12) + 's'
-        V = HAR_IO._unpack_data(fp, dataForm)
+        V = HarFileIO._unpack_data(fp, dataForm)
 
         if Nexplicit > 0:
             dataForm = '=' + str(Nexplicit * 12) + 's'
-            V = HAR_IO._unpack_data(fp, dataForm)
+            V = HarFileIO._unpack_data(fp, dataForm)
 
             ElementList = [fb(V[-1][i:i + 12]) for i in range(0, NSets * 12, 12)]
 
-        HAR_IO._checkRead(fp, nbyte)
+        HarFileIO._checkRead(fp, nbyte)
 
         return Coefficient, SetNames, SetStatus, ElementList
 
@@ -532,7 +532,7 @@ class HAR_IO(object):
         :param fp: io.BufferedReader object.
         :return tuple: ("set_names", "coeff_name", "dim_desc", "dim_type")
         """
-        Coefficient, SetList, SetStatus, ElementList = HAR_IO._readSetElementInfoRecord(fp)
+        Coefficient, SetList, SetStatus, ElementList = HarFileIO._readSetElementInfoRecord(fp)
 
         # print("har_io._readSets Coefficient ", Coefficient)
         # print("har_io._readSets SetList ", SetList)
@@ -551,7 +551,7 @@ class HAR_IO(object):
         for name, status in zip(set_names, SetStatus):
             if status == 'k':
                 if name not in processedSet:
-                    processedSet[name] = HAR_IO._readCharVec(fp, itemsize=12, as_unicode=as_unicode, size=tuple([file_dims[idim]]),
+                    processedSet[name] = HarFileIO._readCharVec(fp, itemsize=12, as_unicode=as_unicode, size=tuple([file_dims[idim]]),
                                     dtype="<U12")
                 header_sets.append({"name": name, "status": status, "dim_type": "Set",
                                     "dim_desc": [item.strip() for item in processedSet[name]]})
