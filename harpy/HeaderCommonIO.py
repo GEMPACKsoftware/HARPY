@@ -14,6 +14,11 @@ def readSets(Head):
     # type: (HeaderData) -> None
     Coefficient, SetList, SetStatus, ElementList = Head.f.getSetElementInfoRecord()
 
+    print("HeaderCommonIO.readSets Coefficient ", Coefficient)
+    print("HeaderCommonIO.readSets SetList ", SetList)
+    print("HeaderCommonIO.readSets SetStatus ", SetStatus)
+    print("HeaderCommonIO.readSets ElementList ", ElementList)
+
     processedSet = {}
 
     Head._setNames = []
@@ -40,6 +45,11 @@ def readSets(Head):
         idim += 1
 
     Head._Cname = Coefficient
+
+    print("HeaderCommonIO.readSets Head._setNames ", Head._setNames)
+    print("HeaderCommonIO.readSets Head._Cname ", Head._Cname)
+    print("HeaderCommonIO.readSets Head._DimDesc ", Head._DimDesc)
+    print("HeaderCommonIO.readSets Head._DimType ", Head._DimType)
 
 
 def writeSets(Head):
@@ -123,13 +133,21 @@ def readHeader7D(Head, hasSets=True, set_names=None):
     # type: (HeaderData,bool) -> None
     if hasSets:
         readSets(Head)
+        print("Head._setNames ", Head._setNames)
         tmpDim=len(Head._setNames)
     else:
         tmpDim = 7
     Head._DataObj = np.ndarray(shape=Head.FileDims[0:tmpDim], dtype=np.float32, order='F')
     Head._DataObj.fill(0.0)
 
+    print("readHeader7D Head.StorageType ", Head.StorageType)
+    print(Head.StorageType == 'FULL')
     if Head.StorageType == 'FULL':
+
+        if Head.f.tell() == 5483:  # TODO: REMOVE
+            print(Head.f.tell())
+            raise RuntimeError
+
         Head._DataObj = Head.f.read7DFullObj(Head._DataObj, 'f')
     else:
         Head._DataObj = Head.f.read7DSparseObj(Head._DataObj, 'f')

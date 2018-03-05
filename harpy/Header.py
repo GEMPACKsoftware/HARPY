@@ -113,6 +113,7 @@ class Header(HeaderData):
                     self._setNames= [self._LongName.split()[1]]
             elif DataType == 'RE':
                 self.hasElements=True
+                print("Header._readHeader() RE self.f.tell() ", self.f.tell())
                 readHeader7D(self, True)
             elif DataType == 'RL':
                 readHeader7D(self, False)

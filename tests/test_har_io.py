@@ -8,6 +8,8 @@ Created on Mar 02 11:17:41 2018
 import os
 import unittest
 
+import numpy as np
+
 from harpy.har_io import HAR_IO
 
 from harpy.HAR import HAR as _HAR
@@ -31,18 +33,41 @@ class TestHarIO(unittest.TestCase):
 
     def test_read_1C(self):
         hfi = HAR_IO.readHarFileInfo(TestHarIO._dd + "test.har")
-        print(hfi)
+        header = HAR_IO.readHeader(hfi, "SIMP")
+        self.assertTrue(all(x == y for (x, y) in zip(header["array"], ["A", "B"])))
 
-        har_obj = _HAR(TestHarIO._dd + "test.har", "r")
-        print(type(har_obj))
-        header = har_obj.getHeader("ARR7")
-        print(type(header))
+    def test_read_RE(self):
+        hfi = HAR_IO.readHarFileInfo(TestHarIO._dd + "test.har")
+        arr7header = HAR_IO.readHeader(hfi, "ARR7")
 
-        # print(har_obj.getHeader("SIMP"))
+        self.assertTrue(np.isclose(arr7header["array"][0, 0, 0, 0, 0, 0, 0], 1.0))
+        self.assertTrue(np.isclose(arr7header["array"][0, 0, 0, 0, 0, 0, 1], 2.0))
+        self.assertTrue(np.isclose(arr7header["array"][0, 0, 0, 0, 0, 1, 0], 3.0))
+        self.assertTrue(np.isclose(arr7header["array"][0, 0, 0, 0, 1, 0, 0], 4.0))
+        self.assertTrue(np.isclose(arr7header["array"][0, 0, 0, 1, 0, 0, 0], 5.0))
+        self.assertTrue(np.isclose(arr7header["array"][0, 0, 1, 0, 0, 0, 0], 6.0))
+        self.assertTrue(np.isclose(arr7header["array"][0, 1, 0, 0, 0, 0, 0], 7.0))
+        self.assertTrue(np.isclose(arr7header["array"][1, 0, 0, 0, 0, 0, 0], 8.0))
+        self.assertTrue(np.isclose(arr7header["array"][1, 1, 1, 1, 1, 1, 1], 9.0))
 
-        HAR_IO.readHeader(hfi, "ARR7")
+    def test_read_2D_RE(self):
+        hfi = HAR_IO.readHarFileInfo(TestHarIO._dd + "test.har")
+        nh01header = HAR_IO.readHeader(hfi, "NH01")
 
-        print(hfi["headers"]["ARR7"]["array"])
+        self.assertTrue(np.isclose(nh01header["array"][0, 0], 1.0))
+        self.assertTrue(np.isclose(nh01header["array"][0, 1], 3.14))
+        self.assertTrue(np.isclose(nh01header["array"][1, 0], 3.14))
+        self.assertTrue(np.isclose(nh01header["array"][1, 1], 5.0))
+
+    def test_read_2I(self):
+        hfi = HAR_IO.readHarFileInfo(TestHarIO._dd + "test.har")
+        intaheader = HAR_IO.readHeader(hfi, "INTA")
+
+        self.assertEqual(intaheader["array"][0, 0], 0)
+        self.assertEqual(intaheader["array"][0, 1], 1)
+        self.assertEqual(intaheader["array"][1, 0], 4)
+        self.assertEqual(intaheader["array"][3, 3], 15)
+
 
 
 if __name__ == "__main__":

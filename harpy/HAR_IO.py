@@ -97,6 +97,7 @@ class HAR_IO(object):
                     self._role = 'set'
                     self._setNames= [self._LongName.split()[1]]
             elif DataType == 'RE':
+                print("HAR_IO.readHeaderByName() RE self.f.tell() ", self.f.tell())
                 self.hasElements=True
                 array = read7DArray(self, hasSets=True)
             elif DataType == 'RL':
@@ -204,27 +205,51 @@ class HAR_IO(object):
         self.f.write(struct.pack(dataForm, *List))
 
     def readCharVec(self, array):
+        # print("HAR_IO.readCharVec() ", array)
+        #
+        # print("HAR_IO.readCharVec() array.itemsize ", array.itemsize)
         Clen = array.itemsize
-        if "<U" in str(array.dtype): Clen = Clen // 4
+
+        if "<U" in str(array.dtype):
+            Clen = Clen // 4
+
         MaxEntry = array.size
         NRec = 100
         ndata = 0
         dataFormStart = self.endian + '4siii'
         while NRec > 1:
             nbyte = self.getEntrySize()
+            # print("HAR_IO.readCharVec() self.f.tell() ", self.f.tell())
 
             V = self.unpack_data(dataFormStart, "1C Header corrupted")
+            # print("HAR_IO.readCharVec() self.f.tell() ", self.f.tell())
+            print("HAR_IO.readCharVec() V ", V)
 
-            if fb(V[0]) != '    ': return "Encountered characters at first four positions"
+            if fb(V[0]) != '    ':
+                return "Encountered characters at first four positions"
+
             NRec = V[1]
-            if V[2] != MaxEntry: return "Different Size than specified"
+
+            print("HAR_IO.readCharVec() MaxEntry ", MaxEntry)
+            if V[2] != MaxEntry:
+                return "Different Size than specified"
+
             if ndata + V[3] > MaxEntry: return "More data on Header than declared"
 
+            # print("HAR_IO.readCharVec() Clen ", Clen)
+            # print("HAR_IO.readCharVec() V[3] * Clen ", V[3] * Clen)
             AllStr = fb(self.f.read(V[3] * Clen))
-            if nbyte != self.getEntrySize(): return "I/O Error: sizes on 1C header do not match record length"
+
+            # print("HAR_IO.readCharVec() nbyte ", nbyte)
+            # print("HAR_IO.readCharVec() self.f.tell() ", self.f.tell())
+            if nbyte != self.getEntrySize():
+                return "I/O Error: sizes on 1C header do not match record length"
+
+            print("HAR_IO.readCharVec() V[3] * Clen, Clen ", V[3] * Clen, Clen)
             for j, i in enumerate(range(0, V[3] * Clen, Clen)):
                 array[ndata + j] = AllStr[i:i + Clen]
             ndata += V[3]
+            print("HAR_IO.readCharVec() NRec ", NRec)
         return None
 
     def write1CData(self, array, vecDim, strLen):
@@ -258,9 +283,11 @@ class HAR_IO(object):
 
         # read the data, has to be in chunks as it is dependent on interanl size specifications
         dataForm = '=' + '4siii12si'
+        print("HAR_IO.getSetElementInfoRecord() self.f.tell() ", self.f.tell())
         V = self.unpack_data(dataForm, "SetEl Info start corrupted [1] ")
 
-        if fb(V[0]) != '    ': raise Exception("Encountered characters at first four positions at)SetEl")
+        if fb(V[0]) != '    ':
+            raise RuntimeError("Encountered characters at first four positions at SetEl")
 
         NSets = V[3]
         Coefficient = fb(V[4])
@@ -334,7 +361,14 @@ class HAR_IO(object):
 
     def read7DFullObj(self, array, dtype):
         nbyte = self.getEntrySize()
+
+        # if self.f.tell() == 5483:  # TODO: REMOVE
+        #     print(self.f.tell())
+        #     raise RuntimeError
+
         dataForm = self.endian + '4sii'
+        print("HAR_IO.read7DFullObj() dataForm %s" % dataForm)
+        print("HAR_IO.read7DFullObj() self.f.tell() %s" % self.f.tell())
 
         V = self.unpack_data(dataForm, "read7D Info start corrupted")
 
@@ -342,6 +376,8 @@ class HAR_IO(object):
         nrec = V[1];
         NDim = V[2]
         dataForm = self.endian + 'i' * NDim
+        print("HAR_IO.read7DFullObj() dataForm %s" % dataForm)
+        print("HAR_IO.read7DFullObj() self.f.tell() %s" % self.f.tell())
 
         V = self.unpack_data(dataForm, "read7D Info start [2] corrupted")
         if nbyte != self.getEntrySize(): raise Exception("Header corrupted read7D [0]")
@@ -569,7 +605,7 @@ class HAR_IO(object):
         data = self.f.read(4)
         if not data: return None
         tmp = struct.unpack(self.endian + self.header, data)[0]
-        # print("HAR_IO struct ", tmp)
+        # print("HAR_IO.getEntrySize() tmp ", tmp)
         return tmp
 
     def getEntry(self):
