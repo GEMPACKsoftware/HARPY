@@ -206,14 +206,14 @@ class Header(HeaderData):
         return myHeader
 
 
-    def HeaderToFile(self,HARFile):
+    def HeaderToFile(self,HARIOInst):
         """
         Should only be called from class HAR
 
-        :param HARFile: file object to which the Header will be written
+        :param HARIOInst: HAR_IO instance that the Header will be written
         :return:
         """
-        self.f=HARFile
+        self.f=HARIOInst
         pos=self.f.tell()
         try:
             self._writeHeader()

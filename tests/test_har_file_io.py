@@ -7,37 +7,49 @@ Created on Mar 02 11:17:41 2018
 
 import os
 import unittest
+import shutil
+import sys
 
 import numpy as np
 
 from harpy.har_file_io import HarFileIO
 
+# print(sys.path)
+# sys.path.insert(0, "/opt/anaconda3/lib/python3.5/site-packages")
+# print(sys.path)
+
 from harpy.HAR import HAR as _HAR
 from harpy.HAR_IO import HAR_IO as _HARIO
 
-class TestHarIO(unittest.TestCase):
+class TestHarFileIO(unittest.TestCase):
     _dd = os.path.join(os.path.dirname(__file__), "testdata", "")
 
     def test_read_har_file_info(self):
-        hfi = HarFileIO.readHarFileInfo(TestHarIO._dd + "test.har")
+        hfi = HarFileIO.readHarFileInfo(TestHarFileIO._dd + "test.har")
         header_names = list(hfi["headers"].keys())
         test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'INTA', 'SIMP', 'SIM2', 'NH01', 'ARR7']
 
         self.assertTrue(all([x == y for (x,y) in zip(header_names, test_hn)]))
 
-    def test_read_header_names(self):
-        header_names = HarFileIO.readHeaderNames(TestHarIO._dd + "test.har")
-        test_names = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'INTA', 'SIMP', 'SIM2', 'NH01', 'ARR7']
+    # def test_read_header_names(self):
+    #     header_names = HarFileIO.readHeaderNames(TestHarFileIO._dd + "test.har")
+    #     test_names = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'INTA', 'SIMP', 'SIM2', 'NH01', 'ARR7']
 
-        self.assertTrue(all([x == y for (x,y) in zip(header_names, test_names)]))
+        # self.assertTrue(all([x == y for (x,y) in zip(header_names, test_names)]))
 
     def test_read_1C(self):
-        hfi = HarFileIO.readHarFileInfo(TestHarIO._dd + "test.har")
+        hfi = HarFileIO.readHarFileInfo(TestHarFileIO._dd + "test.har")
         header = HarFileIO.readHeader(hfi, "SIMP")
-        self.assertTrue(all(x == y for (x, y) in zip(header["array"], ["A", "B"])))
+        self.assertTrue(all([x == y for (x, y) in zip(header["array"], ["A", "B"])]))
+
+    def test_read_1C_2(self):
+        hfi = HarFileIO.readHarFileInfo(TestHarFileIO._dd + "test_read.har")
+        header = HarFileIO.readHeader(hfi, "CHST")
+        test_array = ["F_string    ", "B_string    ", "C_string    ", "D_string    ", "E_string    "]
+        self.assertTrue(all([x == y for (x, y) in zip(header["array"], test_array)]))
 
     def test_read_RE(self):
-        hfi = HarFileIO.readHarFileInfo(TestHarIO._dd + "test.har")
+        hfi = HarFileIO.readHarFileInfo(TestHarFileIO._dd + "test.har")
         arr7header = HarFileIO.readHeader(hfi, "ARR7")
 
         self.assertTrue(np.isclose(arr7header["array"][0, 0, 0, 0, 0, 0, 0], 1.0))
@@ -51,7 +63,7 @@ class TestHarIO(unittest.TestCase):
         self.assertTrue(np.isclose(arr7header["array"][1, 1, 1, 1, 1, 1, 1], 9.0))
 
     def test_read_2D_RE(self):
-        hfi = HarFileIO.readHarFileInfo(TestHarIO._dd + "test.har")
+        hfi = HarFileIO.readHarFileInfo(TestHarFileIO._dd + "test.har")
         nh01header = HarFileIO.readHeader(hfi, "NH01")
 
         self.assertTrue(np.isclose(nh01header["array"][0, 0], 1.0))
@@ -60,7 +72,7 @@ class TestHarIO(unittest.TestCase):
         self.assertTrue(np.isclose(nh01header["array"][1, 1], 5.0))
 
     def test_read_2I(self):
-        hfi = HarFileIO.readHarFileInfo(TestHarIO._dd + "test.har")
+        hfi = HarFileIO.readHarFileInfo(TestHarFileIO._dd + "test.har")
         intaheader = HarFileIO.readHeader(hfi, "INTA")
 
         self.assertEqual(intaheader["array"][0, 0], 0)
@@ -68,7 +80,60 @@ class TestHarIO(unittest.TestCase):
         self.assertEqual(intaheader["array"][1, 0], 4)
         self.assertEqual(intaheader["array"][3, 3], 15)
 
+    def test_write_1C(self):
+        shutil.copy2(TestHarFileIO._dd + "test.har", "temp.har")
 
+        hfi = HarFileIO.readHarFileInfo("temp.har")
+        chst_header = HarFileIO.readHeader(hfi, "CHST")
+        self.assertTrue(chst_header.is_valid())
+
+        chst_header["array"][0] = "F_string" # Change one element
+        HarFileIO._writeHeader("temp.har", chst_header)
+
+        hfi = HarFileIO.readHarFileInfo("temp.har")
+        test_hn = ['CHST']
+        self.assertTrue(all([x == y for (x, y) in zip(list(hfi["headers"].keys()), test_hn)]))
+
+        chst_header = HarFileIO.readHeader(hfi, "CHST")
+        test_array = ["F_string    ", "B_string    ", "C_string    ", "D_string    ", "E_string    "]
+
+        self.assertTrue(all([x == y for (x, y) in zip(chst_header["array"], test_array)]))
+
+        os.remove("temp.har")
+
+    def test_write_2I(self):
+        shutil.copy2(TestHarFileIO._dd + "test.har", "temp.har")
+
+        hfi = HarFileIO.readHarFileInfo("temp.har")
+        inta_header = HarFileIO.readHeader(hfi, "INTA")
+        self.assertTrue(inta_header.is_valid())
+
+        inta_header["array"][3,3] = 30
+        HarFileIO._writeHeader("temp.har", inta_header)
+
+        hfi = HarFileIO.readHarFileInfo("temp.har")
+        inta_header = HarFileIO.readHeader(hfi, "INTA")
+
+        self.assertEqual(inta_header["array"][3, 3], 30)
+
+        os.remove("temp.har")
+
+    def test_write_RE(self):
+        shutil.copy2(TestHarFileIO._dd + "test.har", "temp.har")
+
+        hfi = HarFileIO.readHarFileInfo("temp.har")
+        arr7_header = HarFileIO.readHeader(hfi, "ARR7")
+        self.assertTrue(arr7_header.is_valid())
+
+        arr7_header["array"][1, 1, 1, 1, 1, 1, 1] = 103.14
+        HarFileIO._writeHeader("temp.har", arr7_header)
+
+        hfi = HarFileIO.readHarFileInfo("temp.har")
+        inta_header = HarFileIO.readHeader(hfi, "ARR7")
+
+        self.assertTrue(np.isclose(inta_header["array"][1, 1, 1, 1, 1, 1, 1], 103.14))
+
+        os.remove("temp.har")
 
 if __name__ == "__main__":
     unittest.main()

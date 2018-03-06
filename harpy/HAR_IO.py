@@ -123,7 +123,7 @@ class HAR_IO(object):
     def nextHeader(self):
         # type: () -> (int, str)
         pos = self.f.tell()
-        print("HAR_IO.nextHeader() ", pos)
+        # print("HAR_IO.nextHeader() ", pos)
         data = '';
         Hpos = 0
         while True:
@@ -139,12 +139,13 @@ class HAR_IO(object):
             pos = pos + 8 + nbyte
             self.f.seek(pos - 4)
             self.checkRead(nbyte)
-        print("HAR_IO.nextHeader() Hpos ", Hpos)
+        # print("HAR_IO.nextHeader() Hpos ", Hpos)
         return Hpos, fb(data)
 
     def writeHeaderName(self, name):
         if len(name) > 4: raise Exception('Header Name ' + name + ' too long. Not written to file')
         dataForm = '=i4si'
+        print("HAR_IO.writeHeaderName() self.f.tell() ", self.f.tell())
         self.f.write(struct.pack(dataForm, 4, tb(name), 4))
 
     def parseSecondRec(self, name):

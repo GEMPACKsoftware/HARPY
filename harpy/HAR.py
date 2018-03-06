@@ -59,7 +59,7 @@ class HAR(object):
 
         # if name not in self._HeaderList:
         else:
-            print("Header " + name + " was not found on file " + self.getFileName())
+            print("Header " + name + " was not found on file " + name)
             return None
 
         if getDeepCopy:
@@ -148,7 +148,7 @@ class HAR(object):
         for name in self._HeaderList:
             if not name in self._HeaderDict:
                 self.getHeader(name)
-        self.f.seek(0)
+        self.f.seek(0) # self.f is a HAR_IO instance (both HAR_IO and HAR_IO.f have seek, tell and truncate methods)
         self.f.truncate()
         for name in self._HeaderList:
             Header=self._HeaderDict[name]
