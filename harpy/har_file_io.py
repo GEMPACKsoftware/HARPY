@@ -42,6 +42,55 @@ else:
         if not x: return x
         return x.decode('utf-8')
 
+class HarFileInfoObj(dict):
+
+    def __init__(self, *args, file: str=None, ha_infos: List[dict]=None, **kwargs):
+        """
+        :param str file: The absolute path to the file.
+        :param str head_arrs: A `list` of `dict`. Each `dict` object itself \
+            contains the key-value pairs:
+            :param "name": The name of the header-array.
+            :param "pos_name": maps to an `int` that gives the byte-position of the header data.
+            :param "pos_data": maps to an `int` that gives the byte-position of the array data.
+        """
+        super().__init__(*args, **kwargs)
+        self["file"] = os.path.abspath(file)
+        if ha_infos is None:
+            self["ha_infos"] = []
+
+    def addHAInfo(self, **kwargs):
+        # TODO: Perform checks that there are is sufficient information before adding
+        self["ha_infos"].append(kwargs)
+
+    def is_valid(self, raise_exception=True):
+        """Checks if ``self`` is a valid ``HarFileInfoObj``."""
+        req_keys = ["file", "ha_infos"]
+        req_keys_present = [key in self for key in req_keys]
+
+        if not all(req_keys_present):
+            if raise_exception:
+                raise KeyError("Key '%s' not present in HarFileInfoObj." % req_keys[req_keys_present.index(False)])
+            else:
+                return False
+
+        # TODO: Perform checks on "file" and "ha_infos" types
+
+        return True
+
+    def getHeaderArrayInfo(self, ha_name: str):
+        idx = self._getHeaderArrayInfoIdx(ha_name)
+        return self["ha_infos"][idx]
+
+    def _getHeaderArrayInfoIdx(self, ha_name: str):
+
+        self.is_valid()
+
+        for idx, hai in enumerate(self["ha_infos"]):
+            if hai["name"] == ha_name:
+                return idx
+        else:
+            raise ValueError("'%s' does not exist in har file '%s'." % (ha_name, self["file"]))
+
 class HarFileIO(object):
 
     V1SupDataTypes = ['1C', '2R', '2I', 'RE', 'RL', 'DE', 'DL'] # Supported data types for Version 1
@@ -52,7 +101,6 @@ class HarFileIO(object):
         # type: (str) -> HAR_IO
         """
         :arg (str) fname: Name of file to open.
-        :arg (char) mode: 'r': read, 'w': write or 'a': append.
         :rtype: HAR_IO
         """
 
@@ -60,22 +108,13 @@ class HarFileIO(object):
         self.readHeaderNames(filename)
 
     @staticmethod
-    def readHeaderNames(filename: str):
-        return list(HarFileIO.readHarFileInfo(filename)["headers"].keys())
-
-    @staticmethod
-    def readHarFileInfo(filename: str) -> dict:
+    def readHarFileInfo(filename: str) -> 'HarFileInfoObj':
         """
         :param filename: Filename.
         :return: An `dict`, with the key-value pairs:
-            :param str file: The absolute path to the file.
-            :param str headers: An `OrderedDict` mapping header names to a `dict`. Each mapped `dict` object itself \
-            contains the keys ``"pos_name`` and ``pos_data``, which both map to `int`s that give the byte-position of \
-            the header name and the header data respectively.
+
         """
-        hfi = {}
-        hfi["file"] = os.path.abspath(filename)
-        hfi["headers"] = OrderedDict()
+        hfi = HarFileInfoObj(file=filename)
 
         with open(filename, "rb") as f:
             f.seek(0)
@@ -84,7 +123,9 @@ class HarFileIO(object):
                 pos, name, end_pos = HarFileIO._readHeaderPosName(f)
                 if not name:
                     break
-                hfi["headers"][name] = {"name": name, "pos_name": pos, "pos_data": end_pos}
+                hfi.addHAInfo(**{"name": name, "pos_name": pos, "pos_data": end_pos})
+                # hfi["ha_infos"].append(header.HeaderArrayObj({"name": name, "pos_name": pos, "pos_data": end_pos}))
+
         return hfi
 
     @staticmethod
@@ -114,14 +155,18 @@ class HarFileIO(object):
         return Hpos, fb(data), fp.tell()
 
     @staticmethod
-    def readHeader(hfi: 'HarFileMemObj', header_name: str, *args, **kwargs):
+    def readHeader(hfi: 'HarFileInfoObj', header_name: str, *args, **kwargs):
         """
 
         :param hfi: HarFileMemObj with file information.
         :param header_name: The name of the header.
         :return: Header object with data.
         """
-        header_dict = hfi["headers"][header_name]
+
+        hfi.is_valid()
+        ha_info = hfi.getHeaderArrayInfo(header_name)
+
+        header_dict = ha_info
 
         with open(hfi["file"], "rb") as fp:
 

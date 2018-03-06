@@ -26,7 +26,8 @@ class TestHarFileIO(unittest.TestCase):
 
     def test_read_har_file_info(self):
         hfi = HarFileIO.readHarFileInfo(TestHarFileIO._dd + "test.har")
-        header_names = list(hfi["headers"].keys())
+        # header_names = list(hfi["headers"].keys())
+        header_names = [ha_info["name"] for ha_info in hfi["ha_infos"]]
         test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'INTA', 'SIMP', 'SIM2', 'NH01', 'ARR7']
 
         self.assertTrue(all([x == y for (x,y) in zip(header_names, test_hn)]))
@@ -92,7 +93,8 @@ class TestHarFileIO(unittest.TestCase):
 
         hfi = HarFileIO.readHarFileInfo("temp.har")
         test_hn = ['CHST']
-        self.assertTrue(all([x == y for (x, y) in zip(list(hfi["headers"].keys()), test_hn)]))
+        hfi_headers = [ha_info["name"] for ha_info in hfi["ha_infos"]]
+        self.assertTrue(all([x == y for (x, y) in zip(hfi_headers, test_hn)]))
 
         chst_header = HarFileIO.readHeader(hfi, "CHST")
         test_array = ["F_string    ", "B_string    ", "C_string    ", "D_string    ", "E_string    "]
