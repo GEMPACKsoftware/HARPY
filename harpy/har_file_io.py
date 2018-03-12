@@ -77,6 +77,9 @@ class HarFileInfoObj(dict):
 
         return True
 
+    def getHeaderNames(self):
+        return [ha_info["name"] for ha_info in self["ha_infos"]]
+
     def getHeaderArrayInfo(self, ha_name: str):
         idx = self._getHeaderArrayInfoIdx(ha_name)
         return self["ha_infos"][idx]
@@ -553,7 +556,7 @@ class HarFileIO(object):
             raise IOError('File Corrupted, start int does not match end int.')
 
     @staticmethod
-    def _writeHeader(filename: str, head_arr_obj: header.HeaderArrayObj):
+    def _writeHeaders(filename: Union[str, io.BufferedWriter], head_arr_objs: Union[header.HeaderArrayObj, List[header.HeaderArrayObj]]):
         """
         :param filename: name of file to write into.
         # :param fp: file object to write into.
@@ -562,30 +565,39 @@ class HarFileIO(object):
         :param header_array: A `numpy.ndarray` object of the data.
         :return:
         """
+        if isinstance(head_arr_objs, header.HeaderArrayObj):
+            head_arr_objs = [head_arr_objs]
 
-        if not isinstance(head_arr_obj, header.HeaderArrayObj):
-            raise TypeError("'head_arr_obj' must be of header.HeaderArrayObj type.")
+        for head_arr_obj in head_arr_objs:
+            if not isinstance(head_arr_obj, header.HeaderArrayObj):
+                raise TypeError("All 'head_arr_objs' must be of header.HeaderArrayObj type.")
+            head_arr_obj.is_valid()
 
-        head_arr_obj.is_valid()
+        if isinstance(filename, str):
+            fp = open(filename, "wb")
+        # elif issubclass(type(filename), io.BufferedWriter):
+        #     fp = filename
+        else:
+            raise TypeError("'filename' is invalid - must be either file object or string.")
 
-        with open(filename, "wb") as fp:
-
-            header_type_str = str(head_arr_obj["array"].dtype)
-            has_sets = "sets" in head_arr_obj
-            # has_sets = isinstance(self._setNames, list)
-            if 'float32' == header_type_str and (head_arr_obj["array"].ndim != 2 or has_sets):
-                HarFileIO._writeHeader7D(fp, head_arr_obj)
-            elif 'int32' == header_type_str or 'float32' == header_type_str:
-                HarFileIO._writeHeader2D(fp, head_arr_obj)
-            elif '<U' in header_type_str or '|S' in header_type_str:
-                if head_arr_obj["array"].ndim > 1:
-                    print('"' + head_arr_obj["name"] + '" can not be written as Charcter arrays ndim>1 are not yet supported')
-                    return
-                HarFileIO._writeHeader1C(fp, head_arr_obj)
-            else:
-                raise TypeError('Can not write data in Header: "' +
-                                head_arr_obj["name"] + '" as data style does not match any known Header type')
-            fp.flush()
+        with fp:
+            for head_arr_obj in head_arr_objs:
+                header_type_str = str(head_arr_obj["array"].dtype)
+                has_sets = "sets" in head_arr_obj
+                # has_sets = isinstance(self._setNames, list)
+                if 'float32' == header_type_str and (head_arr_obj["array"].ndim != 2 or has_sets):
+                    HarFileIO._writeHeader7D(fp, head_arr_obj)
+                elif 'int32' == header_type_str or 'float32' == header_type_str:
+                    HarFileIO._writeHeader2D(fp, head_arr_obj)
+                elif '<U' in header_type_str or '|S' in header_type_str:
+                    if head_arr_obj["array"].ndim > 1:
+                        print('"' + head_arr_obj["name"] + '" can not be written as character arrays ndim>1 are not yet supported')
+                        return
+                    HarFileIO._writeHeader1C(fp, head_arr_obj)
+                else:
+                    raise TypeError('Can not write data in Header: "' +
+                                    head_arr_obj["name"] + '" as data style does not match any known Header type')
+                fp.flush()
 
     @staticmethod
     def _writeHeader7D(fp: io.BufferedReader, head_arr_obj: header.HeaderArrayObj):

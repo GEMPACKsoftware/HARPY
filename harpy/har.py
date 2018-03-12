@@ -46,11 +46,13 @@ class HarFileObj(dict):
             else:
                 self.readHeader(ha_names=ha_name)
 
-    def readHeaderArrayObjs(self, ha_names: Union[str, List[str]]):
-        """Reads the header array object with name ``ha_name``.
+    def readHeaderArrayObjs(self, ha_names: Union[None, str, List[str]]=None):
+        """Reads the header array objects with names ``ha_names``. If `None` (the default), read all header array objects.
         """
 
-        if isinstance(ha_names, str):
+        if ha_names is None:
+            ha_names = self["hfio"].getHeaderNames()
+        elif isinstance(ha_names, str):
             ha_names = [ha_names]
 
         for ha_name in ha_names:
