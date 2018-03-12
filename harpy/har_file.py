@@ -84,7 +84,7 @@ class HarFileObj(dict):
         if filename is None:
             filename = self["hfio"]["file"]
 
-        HarFileIO._writeHeaders(filename, ha_to_write)
+        HarFileIO.writeHeaders(filename, ha_to_write)
 
         # for ha_name in ha_names:
         #     self["head_arrs"].append(HarFileIO.readHeader(self["hfio"], ha_name))

@@ -556,7 +556,7 @@ class HarFileIO(object):
             raise IOError('File Corrupted, start int does not match end int.')
 
     @staticmethod
-    def _writeHeaders(filename: Union[str, io.BufferedWriter], head_arr_objs: Union[header.HeaderArrayObj, List[header.HeaderArrayObj]]):
+    def writeHeaders(filename: Union[str, io.BufferedWriter], head_arr_objs: Union[header.HeaderArrayObj, List[header.HeaderArrayObj]]):
         """
         :param filename: name of file to write into.
         # :param fp: file object to write into.

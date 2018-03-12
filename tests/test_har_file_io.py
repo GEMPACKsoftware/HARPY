@@ -80,7 +80,7 @@ class TestHarFileIO(unittest.TestCase):
         self.assertTrue(chst_header.is_valid())
 
         chst_header["array"][0] = "F_string" # Change one element
-        HarFileIO._writeHeaders("temp.har", chst_header)
+        HarFileIO.writeHeaders("temp.har", chst_header)
 
         hfi = HarFileIO.readHarFileInfo("temp.har")
         test_hn = ['CHST']
@@ -102,7 +102,7 @@ class TestHarFileIO(unittest.TestCase):
         self.assertTrue(inta_header.is_valid())
 
         inta_header["array"][3,3] = 30
-        HarFileIO._writeHeaders("temp.har", inta_header)
+        HarFileIO.writeHeaders("temp.har", inta_header)
 
         hfi = HarFileIO.readHarFileInfo("temp.har")
         inta_header = HarFileIO.readHeader(hfi, "INTA")
@@ -119,7 +119,7 @@ class TestHarFileIO(unittest.TestCase):
         self.assertTrue(arr7_header.is_valid())
 
         arr7_header["array"][1, 1, 1, 1, 1, 1, 1] = 103.14
-        HarFileIO._writeHeaders("temp.har", arr7_header)
+        HarFileIO.writeHeaders("temp.har", arr7_header)
 
         hfi = HarFileIO.readHarFileInfo("temp.har")
         inta_header = HarFileIO.readHeader(hfi, "ARR7")
@@ -142,7 +142,7 @@ class TestHarFileIO(unittest.TestCase):
         nh01 = HarFileIO.readHeader(hfi, "NH01")
         arr7 = HarFileIO.readHeader(hfi, "ARR7")
 
-        HarFileIO._writeHeaders("temp.har", [nh01, arr7])
+        HarFileIO.writeHeaders("temp.har", [nh01, arr7])
 
         hfi = HarFileIO.readHarFileInfo("temp.har")
         hn = hfi.getHeaderNames()
