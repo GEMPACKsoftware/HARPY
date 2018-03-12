@@ -1,8 +1,8 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(
     name='HARPY',
-    version='0.01',
+    version='0.1',
     packages=['', 'harpy'],
     url='https://github.com/GEMPACKsoftware/HARPY',
     license='GPLv3',
