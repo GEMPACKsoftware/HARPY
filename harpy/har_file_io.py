@@ -14,9 +14,7 @@ import math
 
 import numpy as np
 
-# from .har import HarFileMemObj
 import harpy.header_array as header
-from .HeaderCommonIO import readHeader1C, readHeader7D, readHeader2D, read7DArray, read2DArray
 
 # compatibility function for python 2.7/3.x
 if sys.version_info < (3,):

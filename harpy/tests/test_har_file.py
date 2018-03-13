@@ -15,13 +15,6 @@ import numpy as np
 from harpy.har_file import HarFileObj
 from harpy.header_array import HeaderArrayObj
 
-# print(sys.path)
-# sys.path.insert(0, "/opt/anaconda3/lib/python3.5/site-packages")
-# print(sys.path)
-
-from harpy.HAR import HAR as _HAR
-from harpy.HAR_IO import HAR_IO as _HARIO
-
 class TestHarFileObj(unittest.TestCase):
     _dd = os.path.join(os.path.dirname(__file__), "testdata", "")
 
