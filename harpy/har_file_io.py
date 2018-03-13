@@ -447,6 +447,46 @@ class HarFileIO(object):
         return array
 
     @staticmethod
+    def _readRESparseObj(fp:io.BufferedReader, array: np.ndarray, dtype):
+        nbyte = HarFileIO._getEntrySize(fp)
+        dataForm = '=4siii80s'
+        nrec = 50
+        V = HarFileIO._unpack_data(fp, dataForm)
+        NNonZero = V[1]
+        if V[2] != 4:
+            raise ValueError("Can only read integer 4 in read7DSparse7D ")
+        if V[3] != 4:
+            raise ValueError("Can only read real 4 in read7DSparse7D ")
+        if nbyte != HarFileIO._getEntrySize(fp):
+            raise ValueError('Header corrupted read7DSparse[0]')
+
+        oldshape = array.shape
+
+        array = array.flatten('F')
+
+        while nrec > 1:
+            nbyte = HarFileIO._getEntrySize(fp)
+            dataForm = '=4siii'
+            V = HarFileIO._unpack_data(fp, dataForm)
+
+            if fb(V[0]) != '    ':
+                raise ValueError("Encountered characters at read7DSparse loop")
+
+            nrec = V[1]
+            NHere = V[3]
+            dataForm = '=' + str(NHere) + 'i' + str(NHere) + dtype
+            V = HarFileIO._unpack_data(fp, dataForm)
+
+            if nbyte != HarFileIO._getEntrySize(fp):
+                raise ValueError('Header corrupted read7DSparse)[1]')
+
+            for i in range(0, NHere):
+                array[V[i] - 1] = V[i + NHere]
+
+        array = array.reshape(oldshape, order='F')
+        return array
+
+    @staticmethod
     def _readSetElementInfoRecord(fp):
 
         SetNames = []
@@ -672,7 +712,7 @@ class HarFileIO(object):
         nint = len(List) - 4
 
         if len(List[3]) != 70:
-            raise ValueError("'long_name' must be precisely 70 characters long.")
+            raise ValueError("'long_name' must be precisely 70 characters long. 'long_name' is: %s (%d characters long)." % (List[3], len(List[3])))
 
         List = [tb(x) if isinstance(x, str) else x for x in List]
         dataForm = '=i4s2s4s70s' + 'i' * nint + 'i' # For reading it is "=4s2s4s70si"
@@ -752,14 +792,14 @@ class HarFileIO(object):
             indexList[ndata-1]=i+1
             valList[ndata-1]=tmp[i]
             if ndata == maxData:
-                HarFileIO._writeSparseList(NNonZero, dtype, indexList, ndata, nrec, valList)
+                HarFileIO._writeSparseList(fp, NNonZero, dtype, indexList, ndata, nrec, valList)
                 nrec = nrec - 1
                 ndata = 0
 
         if ndata != 0:
             indexList=indexList[0:ndata]
             valList=valList[0:ndata]
-            HarFileIO._writeSparseList(NNonZero, dtype, indexList, ndata, nrec, valList)
+            HarFileIO._writeSparseList(fp, NNonZero, dtype, indexList, ndata, nrec, valList)
 
     @staticmethod
     def _write2DArray(fp, array, dtype):

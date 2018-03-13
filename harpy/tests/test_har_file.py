@@ -27,7 +27,7 @@ class TestHarFileObj(unittest.TestCase):
 
     def test_load_from_disk(self):
         hfo = HarFileObj.loadFromDisk(TestHarFileObj._dd + "test.har")
-        header_names = hfo["hfio"].getHeaderNames()
+        header_names = hfo["hfio"].getHeaderArrayNames()
 
         test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'INTA', 'SIMP', 'SIM2', 'NH01', 'ARR7']
 
@@ -40,7 +40,7 @@ class TestHarFileObj(unittest.TestCase):
         self.assertTrue(os.path.isfile("temp.har"))
 
         hfo = HarFileObj.loadFromDisk("temp.har")
-        header_names = hfo["hfio"].getHeaderNames()
+        header_names = hfo["hfio"].getHeaderArrayNames()
 
         test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'INTA', 'SIMP', 'SIM2', 'NH01', 'ARR7']
 
@@ -65,7 +65,7 @@ class TestHarFileObj(unittest.TestCase):
         hfo.writeToDisk()
 
         hfo = HarFileObj.loadFromDisk("test_overwrite_header.har")
-        header_names = hfo["hfio"].getHeaderNames()
+        header_names = hfo["hfio"].getHeaderArrayNames()
         test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'INTA', 'SIMP', 'SIM2', 'NH01', 'ARR7']
         self.assertTrue(all([x == y for (x, y) in zip(header_names, test_hn)]))
 
@@ -73,6 +73,26 @@ class TestHarFileObj(unittest.TestCase):
         self.assertTrue(np.isclose(hao["array"][0,0,0,0,0,0,0], 42.0))
 
         os.remove("test_overwrite_header.har")
+
+    def test_addremove_header_array_obj(self):
+        shutil.copy2(TestHarFileObj._dd + "test.har", "test_remove_header_array.har")
+
+        hfo = HarFileObj.loadFromDisk("test_remove_header_array.har")
+        hao = hfo.removeHeaderArrayObjs("INTA")
+
+        hn = hfo.getHeaderArrayNames()
+        test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'SIMP', 'SIM2', 'NH01', 'ARR7']
+
+        self.assertTrue(all([x == y for (x, y) in zip(hn, test_hn)]))
+
+        hfo.addHeaderArrayObjs(hao)
+
+        hn = hfo.getHeaderArrayNames()
+        test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'SIMP', 'SIM2', 'NH01', 'ARR7', 'INTA']
+
+        self.assertTrue(all([x == y for (x, y) in zip(hn, test_hn)]))
+
+        os.remove("test_remove_header_array.har")
 
 if __name__ == "__main__":
     unittest.main()

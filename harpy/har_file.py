@@ -8,6 +8,7 @@ Created on Mar 12 09:53:27 2018
 from typing import Union, List
 
 from .har_file_io import HarFileIO
+from .header_array import HeaderArrayObj
 
 class HarFileObj(dict):
     """
@@ -23,7 +24,7 @@ class HarFileObj(dict):
 
         self["head_arrs"] = []
 
-    def getHeaderNames(self):
+    def getHeaderArrayNames(self):
         return [h["name"] for h in self["head_arrs"]]
 
     def getHeaderArrayObjIdx(self, ha_name):
@@ -38,22 +39,31 @@ class HarFileObj(dict):
             # print(self["head_arrs"])
             raise ValueError("HeaderArray '%s' does not exist in HarFileObj." % (ha_name))
 
-    def getHeaderArrayObjs(self, ha_names: Union[str, List[str]]):
+    def getHeaderArrayObj(self, ha_name: str):
+        """**Not implemented**.
+        Retrieve a HeaderArrayObj. If the object has not been read into memory, this will initiate a read operation."""
+
+        if not isinstance(ha_name, str):
+            raise TypeError("'ha_name' must be a string.")
+
+        idx = self.getHeaderArrayObjIdx(ha_name=ha_name)
+
+        if not self["head_arrs"][idx].is_valid():
+            self.readHeaderArrayObjs(ha_names=ha_name)
+        return self["head_arrs"][idx]
+
+    def getHeaderArrayObjs(self, ha_names: Union[None, str, List[str]]=None):
         """**Not implemented**.
         Retrieve a HeaderArrayMemObj. If the object has not been read into memory, this will initiate a read operation."""
 
         if isinstance(ha_names, str):
             ha_names = [ha_names]
+        elif ha_names is None:
+            ha_names = self.getHeaderArrayNames()
 
         ha_objs = []
         for ha_name in ha_names:
-            idx = self.getHeaderArrayObjIdx(ha_name=ha_name)
-
-            if self["head_arrs"][idx].is_valid():
-                ha_objs.append(self["head_arrs"][idx])
-            else:
-                self.readHeaderArrayObjs(ha_names=ha_name)
-                ha_objs.append(self.getHeaderArrayObjs(ha_name))
+            ha_objs.append(self.getHeaderArrayObj(ha_name))
         return ha_objs
 
     def readHeaderArrayObjs(self, ha_names: Union[None, str, List[str]]=None):
@@ -75,7 +85,7 @@ class HarFileObj(dict):
         """
 
         if ha_names is None:
-            ha_names = self.getHeaderNames()
+            ha_names = self.getHeaderArrayNames()
         elif isinstance(ha_names, str):
             ha_names = [ha_names]
 
@@ -86,26 +96,42 @@ class HarFileObj(dict):
 
         HarFileIO.writeHeaders(filename, ha_to_write)
 
-        # for ha_name in ha_names:
-        #     self["head_arrs"].append(HarFileIO.readHeader(self["hfio"], ha_name))
+    def removeHeaderArrayObjs(self, ha_names: Union[str, List[str]]=None):
 
+        if isinstance(ha_names, str):
+            ha_names = [ha_names]
 
-    # def write_HAR_File(self):
-    #     """
-    #     Write the content of the HAR object to the file associated with it
-    #
-    #     :return:
-    #     """
-    #     for name in self._HeaderList:
-    #         if not name in self._HeaderDict:
-    #             self.getHeader(name)
-    #     self.f.seek(0)
-    #     self.f.truncate()
-    #     for name in self._HeaderList:
-    #         Header=self._HeaderDict[name]
-    #         if Header.is_valid:
-    #             Header.HeaderToFile(self.f)
-    #     self.f.f.flush()
+        for ha_name in ha_names:
+            idx = self.getHeaderArrayObjIdx(ha_name)
+            return self["head_arrs"].pop(idx)
+
+    def addHeaderArrayObjs(self, ha_objs: Union[HeaderArrayObj, List[HeaderArrayObj]]=None) -> None:
+        """
+        :param ha_objs:
+        :return:
+        """
+
+        if isinstance(ha_objs, HeaderArrayObj):
+            ha_objs = [ha_objs]
+
+        for ha_obj in ha_objs:
+            if ha_obj.is_valid():
+                self.addHeaderArrayObj(ha_obj)
+
+        return None
+
+    def addHeaderArrayObj(self, ha_obj: HeaderArrayObj, idx: int=None):
+        """
+        :param ha_obj:
+        :param idx:
+        :return:
+        """
+
+        if idx is None:
+            idx = len(self["head_arrs"])
+
+        self["head_arrs"].insert(idx, ha_obj)
+
 
     @staticmethod
     def loadFromDisk(filename: str) -> 'HarFileObj':
@@ -115,8 +141,8 @@ class HarFileObj(dict):
         :return:
         """
 
-        hfmo = HarFileObj(filename=filename)
+        hfo = HarFileObj(filename=filename)
         # ha_names = hfmo["hfio"].getHeaderNames()
-        hfmo.readHeaderArrayObjs()
+        hfo.readHeaderArrayObjs()
 
-        return hfmo
+        return hfo
