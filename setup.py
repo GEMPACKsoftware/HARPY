@@ -22,7 +22,7 @@ setup(
     url='https://github.com/GEMPACKsoftware/HARPY',
     license='GPLv3',
     python_requires=">=3.4",
-    install_requires=['numpy'],
+    install_requires=['numpy', 'typing'],
     author="Lyle Collins",
     author_email='Lyle.Collins@csiro.au',
     package_data={'harpy': test_files},
