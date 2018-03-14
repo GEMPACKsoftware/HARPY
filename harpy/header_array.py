@@ -5,7 +5,6 @@ Created on Mar 02 11:39:45 2018
 .. codeauthor:: Lyle Collins <Lyle.Collins@csiro.au>
 """
 import numpy as np
-from typing import Union, List
 
 
 class HeaderArrayObj(dict):
@@ -69,7 +68,7 @@ class HeaderArrayObj(dict):
     @staticmethod
     def HeaderArrayFromData(name: str, array: np.ndarray, coeff_name: str=None, long_name: str=None,
                             version: int=1, storage_type=None, file_dims=None, data_type=None,
-                            sets: Union[None, List[dict]]=None):
+                            sets: 'Union[None, List[dict]]'=None):
         """
         Creates a new HeaderArrayObj from basic data.
 

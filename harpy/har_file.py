@@ -5,8 +5,6 @@ Created on Mar 12 09:53:27 2018
 .. codeauthor:: Lyle Collins <Lyle.Collins@csiro.au>
 """
 
-from typing import Union, List
-
 from .har_file_io import HarFileIO
 from .header_array import HeaderArrayObj
 
@@ -52,7 +50,7 @@ class HarFileObj(dict):
             self.readHeaderArrayObjs(ha_names=ha_name)
         return self["head_arrs"][idx]
 
-    def getHeaderArrayObjs(self, ha_names: Union[None, str, List[str]]=None):
+    def getHeaderArrayObjs(self, ha_names: 'Union[None,str,List[str]]'=None):
         """**Not implemented**.
         Retrieve a HeaderArrayMemObj. If the object has not been read into memory, this will initiate a read operation."""
 
@@ -66,7 +64,7 @@ class HarFileObj(dict):
             ha_objs.append(self.getHeaderArrayObj(ha_name))
         return ha_objs
 
-    def readHeaderArrayObjs(self, ha_names: Union[None, str, List[str]]=None):
+    def readHeaderArrayObjs(self, ha_names: 'Union[None,str,List[str]]'=None):
         """Reads the header array objects with names ``ha_names``. If `None` (the default), read all header array objects.
         """
 
@@ -78,7 +76,7 @@ class HarFileObj(dict):
         for ha_name in ha_names:
             self["head_arrs"].append(HarFileIO.readHeader(self["hfio"], ha_name))
 
-    def writeToDisk(self, filename: str=None, ha_names: Union[None, str, List[str]]=None):
+    def writeToDisk(self, filename: str=None, ha_names: 'Union[None,str,List[str]]'=None):
         """
         :param filename: If provided, writes to ``filename`` instead of overwriting the file read to.
         :return:
@@ -96,7 +94,7 @@ class HarFileObj(dict):
 
         HarFileIO.writeHeaders(filename, ha_to_write)
 
-    def removeHeaderArrayObjs(self, ha_names: Union[str, List[str]]=None):
+    def removeHeaderArrayObjs(self, ha_names: 'Union[str,List[str]]'):
 
         if isinstance(ha_names, str):
             ha_names = [ha_names]
@@ -105,7 +103,7 @@ class HarFileObj(dict):
             idx = self.getHeaderArrayObjIdx(ha_name)
             return self["head_arrs"].pop(idx)
 
-    def addHeaderArrayObjs(self, ha_objs: Union[HeaderArrayObj, List[HeaderArrayObj]]=None) -> None:
+    def addHeaderArrayObjs(self, ha_objs: 'Union[HeaderArrayObj,List[HeaderArrayObj]]'=None) -> None:
         """
         :param ha_objs:
         :return:

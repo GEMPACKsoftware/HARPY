@@ -5,7 +5,6 @@ Created on Mar 02 10:23:40 2018
 .. codeauthor:: Lyle Collins <Lyle.Collins@csiro.au>
 """
 from collections import OrderedDict
-from typing import List, Union
 import io
 import struct
 import sys
@@ -42,7 +41,7 @@ else:
 
 class HarFileInfoObj(dict):
 
-    def __init__(self, *args, file: str=None, ha_infos: List[dict]=None, **kwargs):
+    def __init__(self, *args, file: str=None, ha_infos: 'List[dict]'=None, **kwargs):
         """
         :param str file: The absolute path to the file.
         :param str head_arrs: A `list` of `dict`. Each `dict` object itself \
@@ -594,7 +593,8 @@ class HarFileIO(object):
             raise IOError('File Corrupted, start int does not match end int.')
 
     @staticmethod
-    def writeHeaders(filename: Union[str, io.BufferedWriter], head_arr_objs: Union[header.HeaderArrayObj, List[header.HeaderArrayObj]]):
+    def writeHeaders(filename: 'Union[str, io.BufferedWriter]',
+                     head_arr_objs: 'Union[header.HeaderArrayObj, List[header.HeaderArrayObj]]'):
         """
         :param filename: name of file to write into.
         # :param fp: file object to write into.
