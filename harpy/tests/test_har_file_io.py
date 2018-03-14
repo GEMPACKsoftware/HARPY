@@ -130,7 +130,7 @@ class TestHarFileIO(unittest.TestCase):
 
     def test_get_header_names(self):
         hfi = HarFileIO.readHarFileInfo(TestHarFileIO._dd + "test.har")
-        hn = hfi.getHeaderNames()
+        hn = hfi.getHeaderArrayNames()
         test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'INTA', 'SIMP', 'SIM2', 'NH01', 'ARR7']
         self.assertTrue(all([x == y for (x, y) in zip(hn, test_hn)]))
 
@@ -145,7 +145,7 @@ class TestHarFileIO(unittest.TestCase):
         HarFileIO.writeHeaders("temp.har", [nh01, arr7])
 
         hfi = HarFileIO.readHarFileInfo("temp.har")
-        hn = hfi.getHeaderNames()
+        hn = hfi.getHeaderArrayNames()
         test_hn = ["NH01", "ARR7"]
 
         self.assertTrue(all([x == y for (x, y) in zip(hn, test_hn)]))

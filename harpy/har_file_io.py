@@ -75,7 +75,7 @@ class HarFileInfoObj(dict):
 
         return True
 
-    def getHeaderNames(self):
+    def getHeaderArrayNames(self):
         return [ha_info["name"] for ha_info in self["ha_infos"]]
 
     def getHeaderArrayInfo(self, ha_name: str):

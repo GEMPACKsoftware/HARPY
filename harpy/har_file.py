@@ -71,7 +71,7 @@ class HarFileObj(dict):
         """
 
         if ha_names is None:
-            ha_names = self["hfio"].getHeaderNames()
+            ha_names = self["hfio"].getHeaderArrayNames()
         elif isinstance(ha_names, str):
             ha_names = [ha_names]
 
