@@ -126,6 +126,7 @@ class HarFileIO(object):
                 hfi.addHAInfo(**{"name": name, "pos_name": pos, "pos_data": end_pos})
                 # hfi["ha_infos"].append(header.HeaderArrayObj({"name": name, "pos_name": pos, "pos_data": end_pos}))
 
+        hfi.is_valid()
         return hfi
 
     @staticmethod
@@ -153,6 +154,24 @@ class HarFileIO(object):
             fp.seek(pos - 4)
             HarFileIO._checkRead(fp, nbyte)
         return Hpos, fb(data), fp.tell()
+
+    @staticmethod
+    def readHeaderArraysFromFile(filename: str, ha_names: 'Union[None, str, List[str]]' = None):
+
+        hfi = HarFileIO.readHarFileInfo(filename)
+
+        if ha_names is None:
+            ha_names = hfi.getHeaderArrayNames()
+        elif isinstance(ha_names, str):
+            ha_names = [ha_names]
+
+        haos = []
+
+        for ha_name in ha_names:
+            haos.append(HarFileIO.readHeader(hfi=hfi, header_name=ha_name))
+
+        return haos
+
 
     @staticmethod
     def readHeader(hfi: 'HarFileInfoObj', header_name: str, *args, **kwargs):

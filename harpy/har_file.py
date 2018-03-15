@@ -13,7 +13,9 @@ from .header_array import HeaderArrayObj
 
 class HarFileObj(dict):
     """
-    HAR file memory object - the equivalent of a HAR file stored in memory.
+    HAR file object - essentially a memory representation of a HAR file.
+
+    ``HarFileObj`` subclasses `dict`, and essentially stores a `list` of ``harpy.HeaderArrayObj`` as the value to the key ``"head_arrs"``. Each ``harpy.HeaderArrayObj`` corresponds to a header-array. If ``HarFileObj`` has been loaded from disk, each ``harpy.HeaderArrayObj`` corresponds to a header-array in that file.
     """
 
     def __init__(self, *args, filename: str=None, **kwargs):
@@ -26,36 +28,42 @@ class HarFileObj(dict):
         self["head_arrs"] = []
 
     def getHeaderArrayNames(self):
+        """
+        :return: Returns the name of all ``harpy.HeaderArrayObj()`` stored in ``self``.
+        """
         return [h["name"] for h in self["head_arrs"]]
 
     def getHeaderArrayObjIdx(self, ha_name):
         """
         :param ha_name: Name of Header Array.
-        :return int: The `list` index of the header array.
+        :return int: The `list` index of the ``harpy.HeaderArrayObj``.
         """
         for idx, hao in enumerate(self["head_arrs"]):
             if hao["name"] == ha_name:
                 return idx
         else:
-            # print(self["head_arrs"])
-            raise ValueError("HeaderArray '%s' does not exist in HarFileObj." % (ha_name))
+            raise ValueError("HeaderArrayObj '%s' does not exist in HarFileObj. A possible cause is that the HeaderArrayObj has not been read into memory." % (ha_name))
 
     def getHeaderArrayObj(self, ha_name: str):
-        """**Not implemented**.
-        Retrieve a HeaderArrayObj. If the object has not been read into memory, this will initiate a read operation."""
+        """
+        Retrieve a single ``harpy.HeaderArrayObj``.
+        :param ha_name: The ``"name"`` of the ``harpy.HeaderArrayObj``.
+        :return: A ``harpy.HeaderArrayObj``.
+        """
 
         if not isinstance(ha_name, str):
             raise TypeError("'ha_name' must be a string.")
 
         idx = self.getHeaderArrayObjIdx(ha_name=ha_name)
 
-        if not self["head_arrs"][idx].is_valid():
-            self.readHeaderArrayObjs(ha_names=ha_name)
         return self["head_arrs"][idx]
 
     def getHeaderArrayObjs(self, ha_names: 'Union[None,str,List[str]]'=None):
-        """**Not implemented**.
-        Retrieve a HeaderArrayMemObj. If the object has not been read into memory, this will initiate a read operation."""
+        """
+        Retrieve a `list` of ``harpy.HeaderArrayObj``.
+        :param ha_names: The name or `list` of names of ``harpy.HeaderArrayObj``. If `None` is provided (the default) then all ``harpy.HeaderArrayObj`` are returned.
+        :return: `list` of ``harpy.HeaderArrayObj``.
+        """
 
         if isinstance(ha_names, str):
             ha_names = [ha_names]
@@ -67,8 +75,11 @@ class HarFileObj(dict):
             ha_objs.append(self.getHeaderArrayObj(ha_name))
         return ha_objs
 
+    # def readHeaderArrayObjs(self, filename: str, ha_names: 'Union[None,str,List[str]]' = None):
     def readHeaderArrayObjs(self, ha_names: 'Union[None,str,List[str]]'=None):
-        """Reads the header array objects with names ``ha_names``. If `None` (the default), read all header array objects.
+        """
+        :param ha_names: Reads the header array objects with names ``ha_names``. If `None` (the default), read all header array objects. Reads from a file specified by a ``harpy.HarFileInfoObj`` automatically generated when creating ``self`` from the ``loadFromDisk()`` method, or by providing the ``filename`` argument at initialisation. The ``harpy.HarFileInfoObj`` is stored as the value matching the key ``"hfio"``.
+        :return: `None`
         """
 
         if ha_names is None:
@@ -78,6 +89,8 @@ class HarFileObj(dict):
 
         for ha_name in ha_names:
             self["head_arrs"].append(HarFileIO.readHeader(self["hfio"], ha_name))
+
+        # HarFileIO.readHeaderArraysFromFile(filename=filename, ha_names=ha_names)
 
     def writeToDisk(self, filename: str=None, ha_names: 'Union[None,str,List[str]]'=None):
         """
@@ -143,7 +156,7 @@ class HarFileObj(dict):
         """
 
         hfo = HarFileObj(filename=filename)
-        # ha_names = hfmo["hfio"].getHeaderNames()
         hfo.readHeaderArrayObjs()
+        # hfo.readHeaderArrayObjs(filename=filename)
 
         return hfo
