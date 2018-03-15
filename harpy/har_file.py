@@ -1,4 +1,7 @@
 """
+.. autoclass: HarFileObj
+    :members:
+
 Created on Mar 12 09:53:27 2018
 
 .. sectionauthor:: Lyle Collins <Lyle.Collins@csiro.au>
