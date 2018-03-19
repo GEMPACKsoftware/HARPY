@@ -1,0 +1,240 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>harpy.har_file &#8212; HarPy 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="top" title="HarPy 0.1 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for harpy.har_file</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. autoclass: HarFileObj</span>
+<span class="sd">    :members:</span>
+
+<span class="sd">Created on Mar 12 09:53:27 2018</span>
+
+<span class="sd">.. sectionauthor:: Lyle Collins &lt;Lyle.Collins@csiro.au&gt;</span>
+<span class="sd">.. codeauthor:: Lyle Collins &lt;Lyle.Collins@csiro.au&gt;</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">.har_file_io</span> <span class="k">import</span> <span class="n">HarFileIO</span>
+<span class="kn">from</span> <span class="nn">.header_array</span> <span class="k">import</span> <span class="n">HeaderArrayObj</span>
+
+<div class="viewcode-block" id="HarFileObj"><a class="viewcode-back" href="../../har_file.html#harpy.HarFileObj">[docs]</a><span class="k">class</span> <span class="nc">HarFileObj</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    HAR file object - essentially a memory representation of a HAR file.</span>
+
+<span class="sd">    ``HarFileObj`` subclasses `dict`, and stores a `list` of ``harpy.HeaderArrayObj`` in ``self``. Each ``harpy.HeaderArrayObj`` corresponds to a header-array. If ``HarFileObj`` is provided with ``filename``, then the header-arrays in that file will be loaded - i.e. each ``harpy.HeaderArrayObj``  in ``self`` will correspond to a header-array in that file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;head_arrs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="bp">self</span> <span class="o">=</span> <span class="n">HarFileObj</span><span class="o">.</span><span class="n">loadFromDisk</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="HarFileObj.getHeaderArrayNames"><a class="viewcode-back" href="../../har_file.html#harpy.HarFileObj.getHeaderArrayNames">[docs]</a>    <span class="k">def</span> <span class="nf">getHeaderArrayNames</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :return: Returns the name of all ``harpy.HeaderArrayObj()`` stored with ``self``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">h</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;head_arrs&quot;</span><span class="p">]]</span></div>
+
+<div class="viewcode-block" id="HarFileObj.getHeaderArrayObjIdx"><a class="viewcode-back" href="../../har_file.html#harpy.HarFileObj.getHeaderArrayObjIdx">[docs]</a>    <span class="k">def</span> <span class="nf">getHeaderArrayObjIdx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ha_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param ha_name: Name of Header Array.</span>
+<span class="sd">        :return int: The `list` index of the ``harpy.HeaderArrayObj``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">hao</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s2">&quot;head_arrs&quot;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="n">hao</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">ha_name</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">idx</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;HeaderArrayObj &#39;</span><span class="si">%s</span><span class="s2">&#39; does not exist in HarFileObj. A possible cause is that the HeaderArrayObj has not been read into memory.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">ha_name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="HarFileObj.getHeaderArrayObj"><a class="viewcode-back" href="../../har_file.html#harpy.HarFileObj.getHeaderArrayObj">[docs]</a>    <span class="k">def</span> <span class="nf">getHeaderArrayObj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ha_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve a single ``harpy.HeaderArrayObj``.</span>
+
+<span class="sd">        :param ha_name: The ``&quot;name&quot;`` of the ``harpy.HeaderArrayObj``.</span>
+<span class="sd">        :return: A ``harpy.HeaderArrayObj``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ha_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;&#39;ha_name&#39; must be a string.&quot;</span><span class="p">)</span>
+
+        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getHeaderArrayObjIdx</span><span class="p">(</span><span class="n">ha_name</span><span class="o">=</span><span class="n">ha_name</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;head_arrs&quot;</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="HarFileObj.getHeaderArrayObjs"><a class="viewcode-back" href="../../har_file.html#harpy.HarFileObj.getHeaderArrayObjs">[docs]</a>    <span class="k">def</span> <span class="nf">getHeaderArrayObjs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ha_names</span><span class="p">:</span> <span class="s1">&#39;Union[None,str,List[str]]&#39;</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve a `list` of `harpy.HeaderArrayObj`.</span>
+
+<span class="sd">        :param ha_names: The name or `list` of names of ``harpy.HeaderArrayObj``. If `None` is provided (the default) then all ``harpy.HeaderArrayObj`` are returned.</span>
+<span class="sd">        :return: `list` of ``harpy.HeaderArrayObj``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ha_names</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">ha_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">ha_names</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">ha_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ha_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getHeaderArrayNames</span><span class="p">()</span>
+
+        <span class="n">ha_objs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">ha_name</span> <span class="ow">in</span> <span class="n">ha_names</span><span class="p">:</span>
+            <span class="n">ha_objs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getHeaderArrayObj</span><span class="p">(</span><span class="n">ha_name</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">ha_objs</span></div>
+
+<div class="viewcode-block" id="HarFileObj.readHeaderArrayObjs"><a class="viewcode-back" href="../../har_file.html#harpy.HarFileObj.readHeaderArrayObjs">[docs]</a>    <span class="k">def</span> <span class="nf">readHeaderArrayObjs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ha_names</span><span class="p">:</span> <span class="s1">&#39;Union[None,str,List[str]]&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param ha_names: Reads the header array objects with names ``ha_names`` from ``filename``. If `None` (the default), read all header array objects. `harpy.HeaderArrayObj` are stored in ``self`` and can be retrieved with the ``self.getHeaderArrayObjs()`` method.</span>
+<span class="sd">        :return: `None`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;head_arrs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">HarFileIO</span><span class="o">.</span><span class="n">readHeaderArraysFromFile</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span> <span class="n">ha_names</span><span class="o">=</span><span class="n">ha_names</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="HarFileObj.writeToDisk"><a class="viewcode-back" href="../../har_file.html#harpy.HarFileObj.writeToDisk">[docs]</a>    <span class="k">def</span> <span class="nf">writeToDisk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ha_names</span><span class="p">:</span> <span class="s1">&#39;Union[None,str,List[str]]&#39;</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param filename: Writes `harpy.HeaderArrayObj` with ``ha_names`` to ``filename``. If ``ha_names`` is None, write all the `harpy.HeaderArrayObj` stored in ``self``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">ha_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ha_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getHeaderArrayNames</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ha_names</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">ha_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">ha_names</span><span class="p">]</span>
+
+        <span class="n">ha_to_write</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getHeaderArrayObjs</span><span class="p">(</span><span class="n">ha_names</span><span class="p">)</span>
+
+        <span class="n">HarFileIO</span><span class="o">.</span><span class="n">writeHeaders</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">ha_to_write</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="HarFileObj.removeHeaderArrayObjs"><a class="viewcode-back" href="../../har_file.html#harpy.HarFileObj.removeHeaderArrayObjs">[docs]</a>    <span class="k">def</span> <span class="nf">removeHeaderArrayObjs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ha_names</span><span class="p">:</span> <span class="s1">&#39;Union[str,List[str]]&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param ha_names: Remove one or more `harpy.HeaderArrayObj` from ``self``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ha_names</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">ha_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">ha_names</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">ha_name</span> <span class="ow">in</span> <span class="n">ha_names</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getHeaderArrayObjIdx</span><span class="p">(</span><span class="n">ha_name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;head_arrs&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="HarFileObj.addHeaderArrayObjs"><a class="viewcode-back" href="../../har_file.html#harpy.HarFileObj.addHeaderArrayObjs">[docs]</a>    <span class="k">def</span> <span class="nf">addHeaderArrayObjs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ha_objs</span><span class="p">:</span> <span class="s1">&#39;Union[HeaderArrayObj,List[HeaderArrayObj]]&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param &#39;List[harpy.HeaderArrayObj]&#39; ha_objs: Add one or more `harpy.HeaderArrayObj` to ``self``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ha_objs</span><span class="p">,</span> <span class="n">HeaderArrayObj</span><span class="p">):</span>
+            <span class="n">ha_objs</span> <span class="o">=</span> <span class="p">[</span><span class="n">ha_objs</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">ha_obj</span> <span class="ow">in</span> <span class="n">ha_objs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ha_obj</span><span class="o">.</span><span class="n">is_valid</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">addHeaderArrayObj</span><span class="p">(</span><span class="n">ha_obj</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="HarFileObj.addHeaderArrayObj"><a class="viewcode-back" href="../../har_file.html#harpy.HarFileObj.addHeaderArrayObj">[docs]</a>    <span class="k">def</span> <span class="nf">addHeaderArrayObj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ha_obj</span><span class="p">:</span> <span class="n">HeaderArrayObj</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param ha_obj: A `harpy.HeaderArrayObj` object.</span>
+<span class="sd">        :param idx: The index of ``self[&quot;head_arrs&quot;]`` at which to insert ``ha_obj``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">idx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s2">&quot;head_arrs&quot;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;head_arrs&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">ha_obj</span><span class="p">)</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="HarFileObj.loadFromDisk"><a class="viewcode-back" href="../../har_file.html#harpy.HarFileObj.loadFromDisk">[docs]</a>    <span class="k">def</span> <span class="nf">loadFromDisk</span><span class="p">(</span><span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;HarFileObj&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads a HAR file into memory, returning a HarFileObj.</span>
+<span class="sd">        :param filename: The name of the file to load.</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">hfo</span> <span class="o">=</span> <span class="n">HarFileObj</span><span class="p">()</span>
+        <span class="n">hfo</span><span class="o">.</span><span class="n">readHeaderArrayObjs</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">hfo</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, GEMPACK Software.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

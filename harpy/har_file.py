@@ -15,7 +15,7 @@ class HarFileObj(dict):
     """
     HAR file object - essentially a memory representation of a HAR file.
 
-    ``HarFileObj`` subclasses `dict`, and essentially stores a `list` of ``harpy.HeaderArrayObj`` as the value to the key ``"head_arrs"``. Each ``harpy.HeaderArrayObj`` corresponds to a header-array. If ``HarFileObj`` has been loaded from disk, each ``harpy.HeaderArrayObj`` corresponds to a header-array in that file.
+    ``HarFileObj`` subclasses `dict`, and stores a `list` of ``harpy.HeaderArrayObj`` in ``self``. Each ``harpy.HeaderArrayObj`` corresponds to a header-array. If ``HarFileObj`` is provided with ``filename``, then the header-arrays in that file will be loaded - i.e. each ``harpy.HeaderArrayObj``  in ``self`` will correspond to a header-array in that file.
     """
 
     def __init__(self, *args, filename: str=None, **kwargs):
@@ -29,7 +29,7 @@ class HarFileObj(dict):
 
     def getHeaderArrayNames(self):
         """
-        :return: Returns the name of all ``harpy.HeaderArrayObj()`` stored in ``self``.
+        :return: Returns the name of all ``harpy.HeaderArrayObj()`` stored with ``self``.
         """
         return [h["name"] for h in self["head_arrs"]]
 
@@ -47,6 +47,7 @@ class HarFileObj(dict):
     def getHeaderArrayObj(self, ha_name: str):
         """
         Retrieve a single ``harpy.HeaderArrayObj``.
+
         :param ha_name: The ``"name"`` of the ``harpy.HeaderArrayObj``.
         :return: A ``harpy.HeaderArrayObj``.
         """
@@ -60,7 +61,8 @@ class HarFileObj(dict):
 
     def getHeaderArrayObjs(self, ha_names: 'Union[None,str,List[str]]'=None):
         """
-        Retrieve a `list` of ``harpy.HeaderArrayObj``.
+        Retrieve a `list` of `harpy.HeaderArrayObj`.
+
         :param ha_names: The name or `list` of names of ``harpy.HeaderArrayObj``. If `None` is provided (the default) then all ``harpy.HeaderArrayObj`` are returned.
         :return: `list` of ``harpy.HeaderArrayObj``.
         """
@@ -77,7 +79,7 @@ class HarFileObj(dict):
 
     def readHeaderArrayObjs(self, filename: str, ha_names: 'Union[None,str,List[str]]' = None):
         """
-        :param ha_names: Reads the header array objects with names ``ha_names``. If `None` (the default), read all header array objects. Reads from a file specified by a ``harpy.HarFileInfoObj`` automatically generated when creating ``self`` from the ``loadFromDisk()`` method, or by providing the ``filename`` argument at initialisation. The ``harpy.HarFileInfoObj`` is stored as the value matching the key ``"hfio"``.
+        :param ha_names: Reads the header array objects with names ``ha_names`` from ``filename``. If `None` (the default), read all header array objects. `harpy.HeaderArrayObj` are stored in ``self`` and can be retrieved with the ``self.getHeaderArrayObjs()`` method.
         :return: `None`
         """
 
@@ -85,8 +87,7 @@ class HarFileObj(dict):
 
     def writeToDisk(self, filename: str, ha_names: 'Union[None,str,List[str]]'=None):
         """
-        :param filename: If provided, writes to ``filename`` instead of overwriting the file read to.
-        :return:
+        :param filename: Writes `harpy.HeaderArrayObj` with ``ha_names`` to ``filename``. If ``ha_names`` is None, write all the `harpy.HeaderArrayObj` stored in ``self``.
         """
 
         if ha_names is None:
@@ -99,6 +100,9 @@ class HarFileObj(dict):
         HarFileIO.writeHeaders(filename, ha_to_write)
 
     def removeHeaderArrayObjs(self, ha_names: 'Union[str,List[str]]'):
+        """
+        :param ha_names: Remove one or more `harpy.HeaderArrayObj` from ``self``.
+        """
 
         if isinstance(ha_names, str):
             ha_names = [ha_names]
@@ -107,10 +111,9 @@ class HarFileObj(dict):
             idx = self.getHeaderArrayObjIdx(ha_name)
             return self["head_arrs"].pop(idx)
 
-    def addHeaderArrayObjs(self, ha_objs: 'Union[HeaderArrayObj,List[HeaderArrayObj]]'=None) -> None:
+    def addHeaderArrayObjs(self, ha_objs: 'Union[HeaderArrayObj,List[HeaderArrayObj]]') -> None:
         """
-        :param ha_objs:
-        :return:
+        :param 'List[harpy.HeaderArrayObj]' ha_objs: Add one or more `harpy.HeaderArrayObj` to ``self``.
         """
 
         if isinstance(ha_objs, HeaderArrayObj):
@@ -124,9 +127,8 @@ class HarFileObj(dict):
 
     def addHeaderArrayObj(self, ha_obj: HeaderArrayObj, idx: int=None):
         """
-        :param ha_obj:
-        :param idx:
-        :return:
+        :param ha_obj: A `harpy.HeaderArrayObj` object.
+        :param idx: The index of ``self["head_arrs"]`` at which to insert ``ha_obj``.
         """
 
         if idx is None:
@@ -139,7 +141,7 @@ class HarFileObj(dict):
     def loadFromDisk(filename: str) -> 'HarFileObj':
         """
         Loads a HAR file into memory, returning a HarFileObj.
-        :param filename:
+        :param filename: The name of the file to load.
         :return:
         """
 
