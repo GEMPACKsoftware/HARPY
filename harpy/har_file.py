@@ -21,11 +21,11 @@ class HarFileObj(dict):
     def __init__(self, *args, filename: str=None, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if isinstance(filename, str):
-            self["hfio"] = HarFileIO.readHarFileInfo(filename)
-            self["hfio"].is_valid()
-
         self["head_arrs"] = []
+
+        if isinstance(filename, str):
+            self = HarFileObj.loadFromDisk(filename)
+
 
     def getHeaderArrayNames(self):
         """
@@ -75,24 +75,15 @@ class HarFileObj(dict):
             ha_objs.append(self.getHeaderArrayObj(ha_name))
         return ha_objs
 
-    # def readHeaderArrayObjs(self, filename: str, ha_names: 'Union[None,str,List[str]]' = None):
-    def readHeaderArrayObjs(self, ha_names: 'Union[None,str,List[str]]'=None):
+    def readHeaderArrayObjs(self, filename: str, ha_names: 'Union[None,str,List[str]]' = None):
         """
         :param ha_names: Reads the header array objects with names ``ha_names``. If `None` (the default), read all header array objects. Reads from a file specified by a ``harpy.HarFileInfoObj`` automatically generated when creating ``self`` from the ``loadFromDisk()`` method, or by providing the ``filename`` argument at initialisation. The ``harpy.HarFileInfoObj`` is stored as the value matching the key ``"hfio"``.
         :return: `None`
         """
 
-        if ha_names is None:
-            ha_names = self["hfio"].getHeaderArrayNames()
-        elif isinstance(ha_names, str):
-            ha_names = [ha_names]
+        self["head_arrs"] = HarFileIO.readHeaderArraysFromFile(filename=filename, ha_names=ha_names)
 
-        for ha_name in ha_names:
-            self["head_arrs"].append(HarFileIO.readHeader(self["hfio"], ha_name))
-
-        # HarFileIO.readHeaderArraysFromFile(filename=filename, ha_names=ha_names)
-
-    def writeToDisk(self, filename: str=None, ha_names: 'Union[None,str,List[str]]'=None):
+    def writeToDisk(self, filename: str, ha_names: 'Union[None,str,List[str]]'=None):
         """
         :param filename: If provided, writes to ``filename`` instead of overwriting the file read to.
         :return:
@@ -104,9 +95,6 @@ class HarFileObj(dict):
             ha_names = [ha_names]
 
         ha_to_write = self.getHeaderArrayObjs(ha_names)
-
-        if filename is None:
-            filename = self["hfio"]["file"]
 
         HarFileIO.writeHeaders(filename, ha_to_write)
 
@@ -155,8 +143,7 @@ class HarFileObj(dict):
         :return:
         """
 
-        hfo = HarFileObj(filename=filename)
-        hfo.readHeaderArrayObjs()
-        # hfo.readHeaderArrayObjs(filename=filename)
+        hfo = HarFileObj()
+        hfo.readHeaderArrayObjs(filename=filename)
 
         return hfo

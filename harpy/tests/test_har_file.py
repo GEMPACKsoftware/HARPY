@@ -20,7 +20,7 @@ class TestHarFileObj(unittest.TestCase):
 
     def test_load_from_disk(self):
         hfo = HarFileObj.loadFromDisk(TestHarFileObj._dd + "test.har")
-        header_names = hfo["hfio"].getHeaderArrayNames()
+        header_names = hfo.getHeaderArrayNames()
 
         test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'INTA', 'SIMP', 'SIM2', 'NH01', 'ARR7']
 
@@ -33,7 +33,7 @@ class TestHarFileObj(unittest.TestCase):
         self.assertTrue(os.path.isfile("temp.har"))
 
         hfo = HarFileObj.loadFromDisk("temp.har")
-        header_names = hfo["hfio"].getHeaderArrayNames()
+        header_names = hfo.getHeaderArrayNames()
 
         test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'INTA', 'SIMP', 'SIM2', 'NH01', 'ARR7']
 
@@ -55,10 +55,11 @@ class TestHarFileObj(unittest.TestCase):
         hao = hfo.getHeaderArrayObjs(["ARR7"])[0]
         hao["array"][0,0,0,0,0,0,0] = 42.0
 
-        hfo.writeToDisk()
+        hfo.writeToDisk("test_overwrite_header.har")
 
         hfo = HarFileObj.loadFromDisk("test_overwrite_header.har")
-        header_names = hfo["hfio"].getHeaderArrayNames()
+        header_names = hfo.getHeaderArrayNames()
+        # header_names = hfo["hfio"].getHeaderArrayNames()
         test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'INTA', 'SIMP', 'SIM2', 'NH01', 'ARR7']
         self.assertTrue(all([x == y for (x, y) in zip(header_names, test_hn)]))
 
