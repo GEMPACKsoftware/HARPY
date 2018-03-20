@@ -33,6 +33,14 @@ class HarFileObj(dict):
         """
         return [h["name"] for h in self["head_arrs"]]
 
+    def getRealHeaderArrayNames(self):
+        """
+        :return: Returns only the names of arrays of type 2D or 7D - i.e. multi-dimensional header arrays of floating point numbers.
+        """
+
+        return [h["name"] for h in self["head_arrs"] if h["data_type"] in ["RE"]]
+
+
     def getHeaderArrayObjIdx(self, ha_name):
         """
         :param ha_name: Name of Header Array.

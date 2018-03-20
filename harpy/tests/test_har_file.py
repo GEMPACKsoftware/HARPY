@@ -88,5 +88,17 @@ class TestHarFileObj(unittest.TestCase):
 
         os.remove("test_remove_header_array.har")
 
+    def test_get_real_headerarrays(self):
+        shutil.copy2(TestHarFileObj._dd + "test.har", "test_get_real_headerarrays.har")
+
+        hfo = HarFileObj.loadFromDisk("test_get_real_headerarrays.har")
+        hn = hfo.getRealHeaderArrayNames()
+
+        test_hn = ['NH01', 'ARR7']
+
+        self.assertTrue(all([x == y for (x, y) in zip(hn, test_hn)]))
+
+        os.remove("test_get_real_headerarrays.har")
+
 if __name__ == "__main__":
     unittest.main()
