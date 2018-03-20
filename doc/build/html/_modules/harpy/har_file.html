@@ -79,6 +79,14 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">h</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;head_arrs&quot;</span><span class="p">]]</span></div>
 
+<div class="viewcode-block" id="HarFileObj.getRealHeaderArrayNames"><a class="viewcode-back" href="../../har_file.html#harpy.HarFileObj.getRealHeaderArrayNames">[docs]</a>    <span class="k">def</span> <span class="nf">getRealHeaderArrayNames</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :return: Returns only the names of arrays of type 2D or 7D - i.e. multi-dimensional header arrays of floating point numbers.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">h</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;head_arrs&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">h</span><span class="p">[</span><span class="s2">&quot;data_type&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;RE&quot;</span><span class="p">]]</span></div>
+
+
 <div class="viewcode-block" id="HarFileObj.getHeaderArrayObjIdx"><a class="viewcode-back" href="../../har_file.html#harpy.HarFileObj.getHeaderArrayObjIdx">[docs]</a>    <span class="k">def</span> <span class="nf">getHeaderArrayObjIdx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ha_name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param ha_name: Name of Header Array.</span>
