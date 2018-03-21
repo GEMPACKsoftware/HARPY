@@ -659,36 +659,53 @@ class HarFileIO(object):
     @staticmethod
     def _writeHeader(fp: io.BufferedReader, head_arr_obj: header.HeaderArrayObj):
 
+        head_arr_obj["storage_type"] = 'FULL'
+
         header_type_str = str(head_arr_obj["array"].dtype)
         if header_type_str == "float32":
             if head_arr_obj["array"].ndim > 2:
+                if (float(np.count_nonzero(head_arr_obj["array"])) / head_arr_obj["array"].size) <= 0.4:
+                    head_arr_obj["storage_type"] = 'SPSE'
+                max_dim = 7
                 if "sets" in head_arr_obj:
                     head_arr_obj["data_type"] = "RE"
                 else:
                     head_arr_obj["data_type"] = "RL"
             elif head_arr_obj["array"].ndim == 2:
+                max_dim = 2
                 head_arr_obj["data_type"] = "2R"
         elif header_type_str == "int32":
+            max_dim = 2
             head_arr_obj["data_type"] = "2I"
         elif '<U' in header_type_str or '|S' in header_type_str:
             if head_arr_obj["array"].ndim > 1:
                 raise ValueError("'%s' can not be written as character arrays with more than 1 dimension are not yet supported." % head_arr_obj["name"])
+            max_dim = 2 # Yes, seems a bit counter-intuitive I know
             head_arr_obj["data_type"] = "1C"
+        else:
+            raise TypeError("Can not write data in '%s' as array does not match any known type." % head_arr_obj["name"])
+
+        secRecList = ['    ', head_arr_obj["data_type"], head_arr_obj["storage_type"], head_arr_obj["long_name"], max_dim]
+        ext = [head_arr_obj["array"].shape[i] if i < head_arr_obj["array"].ndim else 1 for i in range(max_dim)]
+        if head_arr_obj["data_type"] == "1C":
+            ext = [head_arr_obj["array"].size, int(header_type_str[2:])]
+        secRecList = secRecList + ext
 
         HarFileIO._writeHeaderName(fp, head_arr_obj["name"])
         HarFileIO._writeSecondRecord(fp, secRecList)
-        if (isinstance(head_arr_obj["sets"], list) and 'float32' == header_type_str and (head_arr_obj["array"].ndim != 2 or has_sets))
-            head_arr_obj["data_type"] = "RE"
-            HarFileIO._writeSetElInfo(fp, head_arr_obj)
-        elif 'float32' == header_type_str and (head_arr_obj["array"].ndim != 2 or has_sets):
-            head_arr_obj["data_type"] = "RL"
 
-        if head_arr_obj["storage_type"] == 'FULL':
-            HarFileIO._write7DFullArray(fp, np.asfortranarray(head_arr_obj["array"]), 'f')
-        else:
-            HarFileIO._write7DSparseArray(fp, np.asfortranarray(head_arr_obj["array"]), 'f')
-        HarFileIO._write2DArray(fp, np.asfortranarray(head_arr_obj["array"]), dtype)
-        HarFileIO._write1CArray(fp, np.asfortranarray(head_arr_obj["array"]), head_arr_obj["array"].size, no_chars)
+        # if (isinstance(head_arr_obj["sets"], list) and 'float32' == header_type_str and (head_arr_obj["array"].ndim != 2 or has_sets))
+        #     head_arr_obj["data_type"] = "RE"
+        #     HarFileIO._writeSetElInfo(fp, head_arr_obj)
+        # elif 'float32' == header_type_str and (head_arr_obj["array"].ndim != 2 or has_sets):
+        #     head_arr_obj["data_type"] = "RL"
+        #
+        # if head_arr_obj["storage_type"] == 'FULL':
+        #     HarFileIO._write7DFullArray(fp, np.asfortranarray(head_arr_obj["array"]), 'f')
+        # else:
+        #     HarFileIO._write7DSparseArray(fp, np.asfortranarray(head_arr_obj["array"]), 'f')
+        # HarFileIO._write2DArray(fp, np.asfortranarray(head_arr_obj["array"]), dtype)
+        # HarFileIO._write1CArray(fp, np.asfortranarray(head_arr_obj["array"]), head_arr_obj["array"].size, no_chars)
 
     @staticmethod
     def _writeHeader7D(fp: io.BufferedReader, head_arr_obj: header.HeaderArrayObj):
@@ -712,9 +729,7 @@ class HarFileIO(object):
         secRecList.extend(shape7D)
         HarFileIO._writeSecondRecord(fp, secRecList)
         if hasElements:
-            HarFileIO._writeSetElInfo(fp, head_arr_obj,
-                                      # Head._setNames, Head._DimType, Head._DimDesc, Head._Cname,
-                                      )
+            HarFileIO._writeSetElInfo(fp, head_arr_obj)
 
         if head_arr_obj["storage_type"] == 'FULL':
             HarFileIO._write7DFullArray(fp, np.asfortranarray(head_arr_obj["array"]), 'f')
@@ -755,7 +770,6 @@ class HarFileIO(object):
 
         dataForm = '=i4si'
         packed = struct.pack(dataForm, 4, tb(name), 4)
-        # print("HarFileIO._writeHeaderName() ", len(packed))
         fp.write(packed)
 
     @staticmethod
