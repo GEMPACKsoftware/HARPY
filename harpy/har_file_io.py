@@ -641,7 +641,7 @@ class HarFileIO(object):
             for head_arr_obj in head_arr_objs:
                 header_type_str = str(head_arr_obj["array"].dtype)
                 has_sets = "sets" in head_arr_obj
-                HarFileIO._writeHeader(fp, head_arr_obj)
+                # HarFileIO._writeHeader(fp, head_arr_obj)
                 if 'float32' == header_type_str and (head_arr_obj["array"].ndim != 2 or has_sets):
                     HarFileIO._writeHeader7D(fp, head_arr_obj)
                 elif 'int32' == header_type_str or 'float32' == header_type_str:
