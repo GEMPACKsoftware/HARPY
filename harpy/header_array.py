@@ -99,10 +99,12 @@ class HeaderArrayObj(dict):
             long_name = coeff_name
 
         # String padding if necessary
+        if len(name) < 4:
+            name = name.ljust(4)
         if len(coeff_name) < 12:
-            coeff_name = "%12s" % coeff_name
+            coeff_name = coeff_name.ljust(12)
         if len(long_name) < 70:
-            long_name = "%70s" % long_name
+            long_name = long_name.ljust(70)
 
         hao["name"] = name
         hao["array"] = array
