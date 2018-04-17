@@ -119,22 +119,41 @@ class HeaderArrayObj(dict):
         if hao.is_valid():
             return hao
 
-        # if sets:
-        #     if not SetElements: SetElements = [None for i in range(0, len(sets))]
-        # cls.SetNames = sets
-        # if sets:
-        #     if isinstance(SetElements, list):
-        #         if not (isinstance(SetElements[0], list) or SetElements[0] is None):
-        #             raise Exception(
-        #                 "Set Elements must be list of list of element names, received only list of element names")
-        #         cls.SetElements = dict(zip(sets, SetElements))
-        #     elif isinstance(SetElements, dict):
-        #         cls.SetElements = SetElements
-        #     else:
-        #         raise Exception(
-        #             "Set Elements have to be a list of lists (in set order) or a dict mapping sets to elements")
-        #
-        # return cls
+    def array_operation(self, other: "HeaderArrayObj", operation: str, name: str="NEW1", **kwargs):
+        """
+        This method is implemented to allow for operations on the arrays of HeaderArrayObjs. Most Tablo-like
+        functionality is replicated with this method.
+        :param "HeaderArrayObj" other: The second ``HeaderArrayObj`` involved in the operation.
+        :param str operation: A ``str`` specifying the ``numpy.ndarray`` operation attribute - e.g. ``"__add__"``.
+        :param dict kwargs: Any additional kwargs are passed to the new ``HeaderArrayObj``.
+        :return: A new ``HeaderArrayObj`` that results from the operation. Will have a default header name of ``"NEW1"``.
+        """
+        new_array = getattr(self["array"], operation)(other["array"])
+        return HeaderArrayObj.HeaderArrayFromData(name="NEW1", array=new_array, **kwargs)
+
+    def __add__(self, other):
+        return self.array_operation(other, "__add__")
+
+    def __mul__(self, other):
+        return self.array_operation(other, "__mul__")
+
+    def __truediv__(self, other):
+        return self.array_operation(other, "__truediv__")
+
+    def __floordiv__(self, other):
+        return self.array_operation(other, "__floordiv__")
+
+    def __pow__(self, other):
+        return self.array_operation(other, "__pow__")
+
+    def __mod__(self, other):
+        return self.array_operation(other, "__mod__")
+
+    def __matmul__(self, other):
+        return self.array_operation(other, "__matmul__")
+
+    def __sub__(self, other):
+        return self.array_operation(other, "__sub__")
 
     class InvalidHeaderArrayName(ValueError):
         """Raised if header array name is not exactly four (alphanumeric) characters long."""

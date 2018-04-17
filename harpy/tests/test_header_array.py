@@ -48,6 +48,30 @@ class TestHeaderArray(unittest.TestCase):
         self.assertTrue(hao.is_valid())
         # TODO: Include array type-checking
 
+    def test_array_operation(self):
+
+        array_2d = np.array([[1.0, 2.0], [3.0, 4.0]])
+
+        hao1 = HeaderArrayObj.HeaderArrayFromData(name="ARRA", array=array_2d)
+        hao2 = HeaderArrayObj.HeaderArrayFromData(name="ARRB", array=array_2d)
+
+        hao3 = hao1 + hao2
+
+        self.assertTrue(np.allclose(hao3["array"], array_2d*2))
+
+        hao3 = hao1 - hao2
+
+        self.assertTrue(np.allclose(hao3["array"], np.array([[0, 0], [0, 0]])))
+
+        hao3 = hao1 * hao2
+
+        self.assertTrue(np.allclose(hao3["array"], np.array([[1, 4], [9, 16]])))
+
+        hao3 = hao1 / hao2
+
+        self.assertTrue(np.allclose(hao3["array"], np.array([[1, 1], [1, 1]])))
+
+
 
 if __name__ == "__main__":
     unittest.main()
