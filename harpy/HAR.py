@@ -34,7 +34,7 @@ class HAR(object):
         self._collectHeaders()
 
     def getHeader(self, name, getDeepCopy=True):
-
+        # type: (str, bool) -> Header
         """
         Returns the Header with the name name from the file object associated with the HAR object.
         The default behaviour returns a pointer to the HEader object on the HAR file, i.e. modifying this
@@ -45,16 +45,17 @@ class HAR(object):
         :returns: Header: Header
         :rtype: Header
         """
-        name=name.strip()
+        name=name.strip().upper()
         if not name in self._HeaderList:
             print("Header " + name + " was not found on file " + self.fname)
             return None
 
         if not name in self._HeaderDict:
             self._HeaderDict[name] = Header.HeaderFromFile(name, self._HeaderPosDict[name], self.f)
+            assert(isinstance(self._HeaderDict[name], Header))
 
         if getDeepCopy:
-            return deepcopy(self._HeaderDict[name])
+            return self._HeaderDict[name].copy_header()
         else:
             return self._HeaderDict[name]
 
@@ -66,10 +67,11 @@ class HAR(object):
         while True:
             pos, name = self.f.nextHeader()
             if not name: break
+            name=name.strip().upper()
             if name in self._HeaderList:
                 raise Exception('Multiple Headers with name ' + name +' on file ' + self.f.f._HeaderName)
-            self._HeaderList.append(name.strip())
-            self._HeaderPosDict[name.strip()]=pos
+            self._HeaderList.append(name)
+            self._HeaderPosDict[name]=pos
 
     def HeaderNames(self):
         """

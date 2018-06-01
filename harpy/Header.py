@@ -4,6 +4,7 @@ import numpy as np
 import sys
 import traceback
 import itertools
+import copy
 
 __docformat__ = 'restructuredtext en'
 genHeaderID = 0
@@ -16,7 +17,7 @@ class Header(HeaderData):
     the Coefficient name
     the set names associated with its dimensions
     the elements of the sets
-    the labaling information
+    the labelling information
     the data entries in the Header
 
     Access to these is provided by properties
@@ -27,7 +28,8 @@ class Header(HeaderData):
 
     def __init__(self, HeaderName=''):
         """
-        :rtype: HeaderData
+        Inherits from HeaderData
+        :rtype: Header
         """
 
         HeaderData.__init__(self)
@@ -40,19 +42,21 @@ class Header(HeaderData):
     def HeaderFromFile(cls, name, pos, HARFile):
         """
         Reads a Header from file.
-        This function Should only be invoked from class HAR as this knows the positio of the Header
+        This function should only be invoked from class HAR as this knows the position of the Header
 
         :param name: Name of the Header
         :param pos: position on the file
-        :param HARFile: file object contaning the Header
-        :return:
+        :param (HAR_IO) HARFile: file object containing the Header
+        :return: Header object
         """
+        """TODO: Suggestion - change from classmethod to staticmethod. Not clear why \'cls\' argument is being passed, \
+        # given that it is immediately overwritten by a call to Header() on the first line and therefore redundant..."""
         cls=Header()
         cls.f=HARFile
         cls._HeaderName=name
 
         try:
-            cls._readHeader(pos)
+            cls._readHeader(pos) # Method inherited from HeaderData class
         except:
             cls._invalidateHeader()
         return cls
@@ -261,11 +265,13 @@ class Header(HeaderData):
         return self._setNames
     @SetNames.setter
     def SetNames(self,names):
-        if not names:
+        if names is None:
             self._setNames=None
             return
+            
         if isinstance(names,str): names=[names]
         elif not isinstance(names,list): raise Exception('SetNames have to str or list of strings')
+            
         if not all([isinstance(item,str) for item in names]):
             raise Exception('Found non string item in SetList, only strings can be set names')
         if not all([len(item)<=12 for item in names]):
@@ -728,6 +734,17 @@ class Header(HeaderData):
             "Setname " + axis + " appears in more than one dimensions. Need to use int instead")
         myaxis = self._setNames.index(axis)
         return myaxis
+
+    def copy_header(self):
+        new = Header(HeaderName=self._HeaderName)
+
+        attrs = set(self.__dict__.keys())
+        attrs.remove('f') # Remove unserialisable attributes
+
+        for k in attrs:
+            setattr(new, k, copy.deepcopy(getattr(self, k)))
+
+        return new
 
 
 

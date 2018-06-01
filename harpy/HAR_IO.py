@@ -28,6 +28,7 @@ else:
 
 
     def fb(x):
+        # type: str -> str
         if not x: return x
         return x.decode('utf-8')
 
@@ -43,10 +44,11 @@ class HAR_IO(object):
     def __init__(self, fname, mode):
         # type: (str) -> HAR_IO
         """
-
+        :arg (str) fname: Name of file to open.
+        :arg (char) mode: 'r': read, 'w': write or 'a': append.
         :rtype: HAR_IO
         """
-        if mode not in "arw": raise Exception("Unknwon mode to open file")
+        if mode not in "arw": raise Exception("Unknown mode to open file")
         self.f = open(fname, mode+'+b')
         self.endian = "="
         self.header = "i"
@@ -55,6 +57,7 @@ class HAR_IO(object):
         self.f.close()
 
     def nextHeader(self):
+        # type: () -> (int, str)
         pos = self.f.tell()
         data = '';
         Hpos = 0
@@ -195,20 +198,16 @@ class HAR_IO(object):
             dataForm = '=i'
         else:
             dataForm = "=" + str(NSets * 12) + 's' + str(NSets) + 's' + str(NSets) + 'i' + 'i'
-
         V = self.unpack_data(dataForm, "SetEl Info start corrupted [2] ")
         if NSets > 0:
             SetList = [fb(V[0][i:i + 12]) for i in range(0, NSets * 12, 12)]
             SetStatus = [fb(V[1][i:i + 1]) for i in range(0, NSets)]
 
         Nexplicit = V[-1]
-        dataForm = '=' + str(Nexplicit * 12) + 's'
-        V = self.unpack_data(dataForm, "SetEl Info start corrupted [3] ")
         if Nexplicit > 0:
             dataForm = '=' + str(Nexplicit * 12) + 's'
             V = self.unpack_data(dataForm, "SetEl Info start corrupted [3] ")
-            ElementList = [fb(V[-1][i:i + 12]) for i in range(0, NSets * 12, 12)]
-
+            ElementList = [fb(V[-1][i:i + 12]) for i in range(0, Nexplicit * 12, 12)]
         self.checkRead(nbyte)
 
         return Coefficient, SetList, SetStatus, ElementList
@@ -230,7 +229,7 @@ class HAR_IO(object):
                     tmp[i] = setEls
                     statusStr += 'k'
                 elif j == 'El':
-                    elList.append(setEls[0])
+                    elList.append(setEls)
                     statusStr += 'e'
                 else:
                     statusStr += 'u'
@@ -244,7 +243,7 @@ class HAR_IO(object):
         dataForm = '=i4siii12si'
         if nSets > 0: dataForm += str(nSets * 13) + 's' + str(nSets) + 'i'
         dataForm += 'i'
-        if nElement > 0: dataForm += str(nElement * 12)
+        if nElement > 0: dataForm += str(nElement * 12)+'s'
         dataForm += 'i'
         nbyte = struct.calcsize(dataForm) - 8
         writeList = [nbyte, tb('    '), nToWrite, 1, nSets, tb(CName.ljust(12)), 1]
@@ -255,7 +254,6 @@ class HAR_IO(object):
         writeList.append(nElement)
         if nElement > 0: writeList.append(ElementStr)
         writeList.append(nbyte)
-
         self.f.write(struct.pack(dataForm, *writeList))
 
         if nToWrite > 0:
@@ -419,6 +417,7 @@ class HAR_IO(object):
         self.f.write(struct.pack('=i', nbyte))
 
     def read2Dobject(self, array, dtype):
+        # type: (numpy.array?, datatype) -> None
         nrec = 50
         arraySize = array.size
         nread = 0
@@ -494,6 +493,7 @@ class HAR_IO(object):
             raise IOError('File Corrupted, start int does not match end int ')
 
     def getEntrySize(self):
+        # type: () -> int
         data = self.f.read(4)
         if not data: return None
         return struct.unpack(self.endian + self.header, data)[0]
