@@ -31,6 +31,9 @@ class HeaderData(object):
         self.f.seek(pos)
 
         newpos, name = self.f.nextHeader() # This relies on a subclass creating the 'f' object, which declares this method
+
+        name=name.strip().upper()
+
         if newpos != pos or self._HeaderName != name.strip():
             raise RuntimeError("Header " + self._HeaderName + "not at indicated position")
 

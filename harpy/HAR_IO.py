@@ -198,20 +198,16 @@ class HAR_IO(object):
             dataForm = '=i'
         else:
             dataForm = "=" + str(NSets * 12) + 's' + str(NSets) + 's' + str(NSets) + 'i' + 'i'
-
         V = self.unpack_data(dataForm, "SetEl Info start corrupted [2] ")
         if NSets > 0:
             SetList = [fb(V[0][i:i + 12]) for i in range(0, NSets * 12, 12)]
             SetStatus = [fb(V[1][i:i + 1]) for i in range(0, NSets)]
 
         Nexplicit = V[-1]
-        dataForm = '=' + str(Nexplicit * 12) + 's'
-        V = self.unpack_data(dataForm, "SetEl Info start corrupted [3] ")
         if Nexplicit > 0:
             dataForm = '=' + str(Nexplicit * 12) + 's'
             V = self.unpack_data(dataForm, "SetEl Info start corrupted [3] ")
-            ElementList = [fb(V[-1][i:i + 12]) for i in range(0, NSets * 12, 12)]
-
+            ElementList = [fb(V[-1][i:i + 12]) for i in range(0, Nexplicit * 12, 12)]
         self.checkRead(nbyte)
 
         return Coefficient, SetList, SetStatus, ElementList
@@ -233,7 +229,7 @@ class HAR_IO(object):
                     tmp[i] = setEls
                     statusStr += 'k'
                 elif j == 'El':
-                    elList.append(setEls[0])
+                    elList.append(setEls)
                     statusStr += 'e'
                 else:
                     statusStr += 'u'
@@ -247,7 +243,7 @@ class HAR_IO(object):
         dataForm = '=i4siii12si'
         if nSets > 0: dataForm += str(nSets * 13) + 's' + str(nSets) + 'i'
         dataForm += 'i'
-        if nElement > 0: dataForm += str(nElement * 12)
+        if nElement > 0: dataForm += str(nElement * 12)+'s'
         dataForm += 'i'
         nbyte = struct.calcsize(dataForm) - 8
         writeList = [nbyte, tb('    '), nToWrite, 1, nSets, tb(CName.ljust(12)), 1]
@@ -258,7 +254,6 @@ class HAR_IO(object):
         writeList.append(nElement)
         if nElement > 0: writeList.append(ElementStr)
         writeList.append(nbyte)
-
         self.f.write(struct.pack(dataForm, *writeList))
 
         if nToWrite > 0:

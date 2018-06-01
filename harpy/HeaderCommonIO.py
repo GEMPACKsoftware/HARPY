@@ -125,7 +125,7 @@ def writeHeader7D(Head):
         Head.StorageType = 'SPSE'
     shape7D = [Head._DataObj.shape[i] if i < Head._DataObj.ndim else 1 for i in range(0, 7)]
 
-    Head.f.writeHeaderName(Head._HeaderName)
+    Head.f.writeHeaderName(Head._HeaderName.ljust(4))
     if hasElements:
         HeaderType = 'RE'
     else:

@@ -45,7 +45,7 @@ class HAR(object):
         :returns: Header: Header
         :rtype: Header
         """
-        name=name.strip()
+        name=name.strip().upper()
         if not name in self._HeaderList:
             print("Header " + name + " was not found on file " + self.fname)
             return None
@@ -67,10 +67,11 @@ class HAR(object):
         while True:
             pos, name = self.f.nextHeader()
             if not name: break
+            name=name.strip().upper()
             if name in self._HeaderList:
                 raise Exception('Multiple Headers with name ' + name +' on file ' + self.f.f._HeaderName)
-            self._HeaderList.append(name.strip())
-            self._HeaderPosDict[name.strip()]=pos
+            self._HeaderList.append(name)
+            self._HeaderPosDict[name]=pos
 
     def HeaderNames(self):
         """

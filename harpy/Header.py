@@ -265,7 +265,9 @@ class Header(HeaderData):
         return self._setNames
     @SetNames.setter
     def SetNames(self,names):
-        if names is None: names=[]
+        if names is None:
+            self._setNames=None
+            return
             
         if isinstance(names,str): names=[names]
         elif not isinstance(names,list): raise Exception('SetNames have to str or list of strings')
