@@ -1,9 +1,8 @@
 # HARPY
 This project provides a python package to read and write HAR files produced by GEMPACK 11.4 or lower.
-In addition a basic decoder for SL4 to HAR format is implemented.
 
-## Current state of the project
-HARPY has recently undergone major structural changes to make it easier to users to learn and use the library - this new version is 0.3. As part of these changes, Harpy has moved from a Python 2 base to Python 3. The simpler interface comes with associated documentation, as well as a testing suite which (together) will make learning the Harpy API easier and maintain/improve the code quality of HARPY.
+## NEW - HARPY has adopted major (backwards-incompatible) changes
+HARPY has recently undergone major structural changes to make it easier to users to learn and use the library - this new version is 0.3. As part of these changes, Harpy has moved from a Python 2 base to Python 3. The simpler interface comes with associated documentation, as well as a testing suite which (together) will make learning the Harpy API easier and maintain/improve the code quality of HARPY. Please see the documentation section below for details.
 
 The previous interface can be considered deprecated. Although bug-fixes to the old API will be considered, no guarantees of continued development (as with the current interface) are given. Any development of the old-interface will be merged with the v001 branch. New development will occur on the master branch (as per the status quo). Similar to v0.01, v0.3 (with the Python 3-related changes) can be considered 'under development'.
 
@@ -21,9 +20,15 @@ The code on github is released under the GPLv3. We know it is not the most commo
 
 There is a [Contributor License Agreement(CLA)](https://gist.github.com/floschiffmann/de59328612863e1566a37a3490f9c5fd) for people who want to participate in the project (you will be asked to agree upon the first pull request). This will allow us to distribute the code under a different license in cases where there is a good reason why GPL can not be used. 
 
+## Citations
+
+If you use this software in an academic context, a citation is requested:
+
+.. [1] F. Schiffmann and L. D. Collins, *"Harpy v0.3: A Python API to interact with header array (HAR) files,"* Melbourne, Australia, 2018, [https://github.com/GEMPACKsoftware/HARPY](https://github.com/GEMPACKsoftware/HARPY).
 
 ## Who is behind the project and why is it on github?
-The project was initiated by GEMPACK software development team. We felt the need to make the processing of HAR files easier from within other programming languages. Therefore we decided to write a python interface to read and write HAR files. After the hard part was done (reading Fortran binary files from python is not fun), the question arose how to release the software.
+The project was initiated by GEMPACK software development team. We felt the need to make the processing of HAR files easier from within other programming languages. Therefore we decided to write a python interface to read and write HAR files. After the hard part was done (reading Fortran binary files from python is not fun), the question arose how to release the software. In June of 2018, the CSIRO Energy Business Unit contributed major (backwards-incompatible) structural changes to improve the interface. The version immediately prior to these changes is v0.01, the version immediately after is v0.3.
+
 We decided to make it an open source project as we lack the man power to properly maintain the package according to the standards we impose in GEMPACK:
 * Ensure correctness of all provided features
 * Ensure completeness, i.e. all features of GEMPACK are supported

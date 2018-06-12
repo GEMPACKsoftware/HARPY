@@ -16,7 +16,7 @@ test_files = package_files('harpy/tests/testdata')
 
 setup(
     name='HARPY',
-    version='0.1',
+    version='0.3',
     description='Library for reading/modifying/writing header-array (HAR) files.',
     packages=find_packages(),
     url='https://github.com/GEMPACKsoftware/HARPY',
