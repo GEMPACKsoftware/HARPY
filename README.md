@@ -3,11 +3,18 @@ This project provides a python package to read and write HAR files produced by G
 In addition a basic decoder for SL4 to HAR format is implemented.
 
 ## Current state of the project
-The package is currently in alpha 001 stage. From our testing most provided features will work. However, not everything is properly tested and there are some pitfalls in using the library (e.g. Fortran and C memory order of numpy arrays). Even if your program runs without error, you should check that the result is correct. We do not give any warranty for the package.
+HARPY has recently undergone major structural changes to make it easier to users to learn and use the library - this new version is 0.3. As part of these changes, Harpy has moved from a Python 2 base to Python 3. The simpler interface comes with associated documentation, as well as a testing suite which (together) will make learning the Harpy API easier and maintain/improve the code quality of HARPY.
+
+The previous interface can be considered deprecated. Although bug-fixes to the old API will be considered, no guarantees of continued development (as with the current interface) are given. Any development of the old-interface will be merged with the v001 branch. New development will occur on the master branch (as per the status quo). Similar to v0.01, v0.3 (with the Python 3-related changes) can be considered 'under development'.
+
+## Documentation
+
+The documentation for the HARPY library can be read by downloading the source code and opening, in a web browser, the file ``doc/build/html/index.html``.
 
 ## Dependencies and compatibility
-HARPY can be used with python 2.7 as well as 3.x verions.
-The only additional package required to use this project is [numpy](www.numpy.org).  
+HARPY v0.3 depends on version 3.4 of Python (or later).
+The only additional package required to use this project is [numpy](www.numpy.org).
+The documentation library *Sphinx* (and some sphinx extensions) is required to build new versions of the documentation.
 
 ## License
 The code on github is released under the GPLv3. We know it is not the most common license for python sources. However, for users who just use it for data processessing and do not distribute their code the GPL should not cause any problems. If you want to distribute code including the HARPY package, it will have to be under the terms of the GPL as well.
@@ -39,9 +46,5 @@ Contributing to the project is easy (recommended steps):
 * If there are issues, there will be a round of discussion and fixes
 * Once everything is OK, we will merge the changes with the main project
 
-## TODO
-* [ ] Verify, improve or fix the installer
-* [ ] Document the source code
-* [ ] Write documentation for users
-* [ ] Build proper testing framework
+
 
