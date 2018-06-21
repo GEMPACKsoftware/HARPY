@@ -15,7 +15,7 @@ def package_files(directory, append_to=None):
 test_files = package_files('harpy/tests/testdata')
 
 setup(
-    name='harpy',
+    name='harpy3',
     version='0.3.1',
     description='Library for reading/modifying/writing header-array (HAR) files.',
     packages=find_packages(),

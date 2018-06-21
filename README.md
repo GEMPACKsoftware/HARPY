@@ -9,7 +9,11 @@ Harpy can now be installed using pip:
     pip install harpy3
 ```
 
-**IMPORTANT:** Note the command above specifies ``harpy3``, **not** ``harpy`` (the package name ``harpy`` was already in use on PIP). However, consistent with previous versions of harpy, the API can be imported with ``import harpy``.
+**IMPORTANT:** Note the command above specifies ``harpy3``, **not** ``harpy`` (the package name ``harpy`` was already in use on PIP). However, consistent with previous versions of harpy, the API is imported with:
+
+```
+    import harpy
+```
 
 ## NEW - Harpy has adopted major (backwards-incompatible) changes
 
