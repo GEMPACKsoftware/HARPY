@@ -19,11 +19,11 @@ Harpy can now be installed using pip:
 
 Harpy has recently undergone major structural changes to make it easier to users to learn and use the library - this new version is 0.3 (the old is 0.01). As part of these changes, Harpy has moved from a Python 2 base to Python 3. The simpler interface comes with associated documentation, as well as a testing suite which (together) will make learning the Harpy API easier and help maintain/improve the code quality of Harpy. Please see the documentation section below for details.
 
-The previous interface can be considered deprecated. Although bug-fixes to the old API will be considered, no guarantees of continued development  are given. Any development of the old-interface will be merged with the v001 branch. New development will occur on the master branch (as per the status quo). Similar to v0.01, v0.3 (with the Python 3-related changes) can be considered 'under development'. To use v0.01 can be done by one of these processes:
+The previous interface can be considered deprecated. Although bug-fixes to the old API will be considered, no guarantees of continued development  are given. Any development of the old-interface will occur on the `v0.01dev` branch. New development will occur on the master branch (as per the status quo). Similar to v0.01, v0.3 (with the Python 3-related changes) can be considered 'under development'. To use the `v0.01` release (i.e. without the latest development on `v0.01`), this can be done by one of these processes:
 
- 1. Downloading the zip file of the `v0.01` branch on GitHub, and following the identical install process as before (regardless of whether you were using `v0.01` or `v0.3`).
- 2. If using a git program with a graphical interface, switch to the  `v0.01` branch. This would likely be found by looking for a *checkout* option, and selecting a different branch - the `v0.01` branch. The remaining install process is identical as before (regardless of whether you were using `v0.01` or `v0.3`).
- 3. Using a git clone of the harpy repository, switch to the `v0.01` branch using the command ``git checkout v0.01``. The remaining install process is identical to that of `v0.3`. The remaining install process is identical as before (regardless of whether you were using `v0.01` or `v0.3`).
+ 1. Downloading the zip file of the `v0.01` release on GitHub, and following the identical install process as before (regardless of whether you were using `v0.01` or `v0.3`).
+ 2. If using a git program with a graphical interface, checkout the  `v0.01` release. This would likely be found by looking for a *checkout* option, and selecting a *tag* or a *tagged commit* - the `v0.01` release. The remaining install process is identical as before (regardless of whether you were using `v0.01` or `v0.3`).
+ 3. Using a git clone of the harpy repository, checkout the `v0.01` release using the command ``git checkout v0.01``. The remaining install process is identical to that of `v0.3`. The remaining install process is identical as before (regardless of whether you were using `v0.01` or `v0.3`).
 
 ## Documentation
 
