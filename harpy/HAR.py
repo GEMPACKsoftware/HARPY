@@ -1,6 +1,7 @@
 from __future__ import print_function, absolute_import
 from .HAR_IO import HAR_IO
 from .Header import Header
+import os
 from copy import deepcopy
 
 __docformat__ = 'restructuredtext en'
@@ -22,16 +23,20 @@ class HAR(object):
         All headers on the file are registered with the HAR object. Upon write all Headers are rewritten.
 
         :param fname: name of the HAR file
-        :param mode: "w" or "r" for write or read
+        :param mode: "w" or "r" or "rw" for write or read or readwrite
         """
         self._HeaderList=[]
         self._HeaderDict = {}
         self._HeaderPosDict= {}
 
-        self.f = HAR_IO(fname,mode)
         self.fname = fname
 
-        self._collectHeaders()
+        self.mode=mode
+        if not mode in ['r','w','rw']: raise Exception("Mode has to be r, w or rw")
+        if not 'w' in mode and not os.path.isfile(self.fname):
+            raise Exception("Read file "+self.fname+" does not exist")
+        if 'r' in mode and os.path.isfile(self.fname): self._collectHeaders()
+
 
     def getHeader(self, name, getDeepCopy=True):
         # type: (str, bool) -> Header
@@ -51,8 +56,9 @@ class HAR(object):
             return None
 
         if not name in self._HeaderDict:
-            self._HeaderDict[name] = Header.HeaderFromFile(name, self._HeaderPosDict[name], self.f)
-            assert(isinstance(self._HeaderDict[name], Header))
+            with HAR_IO(self.fname,'r') as IOObj:
+                self._HeaderDict[name] = Header.HeaderFromFile(name, self._HeaderPosDict[name], IOObj)
+                assert(isinstance(self._HeaderDict[name], Header))
 
         if getDeepCopy:
             return self._HeaderDict[name].copy_header()
@@ -63,15 +69,15 @@ class HAR(object):
         """
         Find all Header on a file. This is a private method and does not take any arguments
         """
-        self.f.seek(0)
-        while True:
-            pos, name = self.f.nextHeader()
-            if not name: break
-            name=name.strip().upper()
-            if name in self._HeaderList:
-                raise Exception('Multiple Headers with name ' + name +' on file ' + self.f.f._HeaderName)
-            self._HeaderList.append(name)
-            self._HeaderPosDict[name]=pos
+        with HAR_IO(self.fname,'r') as IOObj:
+            while True:
+                pos, name = IOObj.nextHeader()
+                if not name: break
+                name=name.strip().upper()
+                if name in self._HeaderList:
+                    raise Exception('Multiple Headers with name ' + name +' on file ' + self.fname)
+                self._HeaderList.append(name)
+                self._HeaderPosDict[name]=pos
 
     def HeaderNames(self):
         """
@@ -91,6 +97,9 @@ class HAR(object):
         :type Header: Header
         :return:
         """
+
+        if not 'w' in self.mode: raise Exception("Cannot delete Header to HAR "+self.fname+" as it was declared mode r")
+
         if Header._HeaderName in self._HeaderDict:
             self._HeaderList.remove(Header._HeaderName)
 
@@ -106,6 +115,9 @@ class HAR(object):
         :return:
         """
 
+        if not 'w' in self.mode: raise Exception("Cannot add Header to HAR "+self.fname+" as it was declared mode r")
+
+
         if Header._HeaderName in self._HeaderDict and not overwrite:
             #print ("Header with name '" + Header._HeaderName + "' already on file")
             return
@@ -120,19 +132,20 @@ class HAR(object):
 
         :return:
         """
+        if not 'w' in self.mode: raise Exception("Cannot write to file "+self.fname+" as it was declared mode r")
+
         for name in self._HeaderList:
             if not name in self._HeaderDict:
                 self.getHeader(name)
-        self.f.seek(0)
-        self.f.truncate()
-        for name in self._HeaderList:
-            Header=self._HeaderDict[name]
-            if Header.is_valid:
-                Header.HeaderToFile(self.f)
-        self.f.f.flush()
+        with HAR_IO(self.fname,'w') as IOObj:
+            IOObj.truncate()
+            for name in self._HeaderList:
+                Header=self._HeaderDict[name]
+                if Header.is_valid:
+                    Header.HeaderToFile(IOObj)
 
-    @classmethod
-    def cmbhar(cls,inFileList,outfile):
+    @staticmethod
+    def cmbhar(inFileList,outfile):
         """
 
 
@@ -142,7 +155,7 @@ class HAR(object):
         :type outfile: str
         :return:
         """
-        cls=HAR(outfile,'w')
+        HARobj=HAR(outfile,'w')
         harList=[]
         for myFile in inFileList:
             harList.append(HAR(myFile,'r'))
@@ -150,18 +163,18 @@ class HAR(object):
         for name in refHAR.HeaderNames():
             AllList=[refHAR.getHeader(name)]
             if not 'float' in str(AllList[0].DataObj.dtype):
-                cls.addHeader(AllList[0])
+                HARobj.addHeader(AllList[0])
             else:
                 for hars in harList[1:]:
                     AllList.append(hars.getHeader(name))
                 CmbedHeader=Header.concatenate(AllList,elemList=['File'+str(i) for i in range(0,len(inFileList))],
                                                headerName=name)
-                cls.addHeader(CmbedHeader)
-        return cls
+                HARobj.addHeader(CmbedHeader)
+        return HARobj
 
 
-    @classmethod
-    def diffhar(cls, inFileList, outfile):
+    @staticmethod
+    def diffhar(inFileList, outfile):
         """
         computes the running difference between a set of har files.
         Differences are always taken between consecutive entries in the inFileList
@@ -172,7 +185,7 @@ class HAR(object):
         :type outfile: str
         :return:
         """
-        cls = HAR(outfile, 'w')
+        HARobj = HAR(outfile, 'w')
         harList = []
         for myFile in inFileList:
             harList.append(HAR(myFile, 'r'))
@@ -180,14 +193,14 @@ class HAR(object):
         for name in refHAR.HeaderNames():
             AllList = [refHAR.getHeader(name)]
             if not 'float' in str(AllList[0].DataObj.dtype):
-                cls.addHeader(AllList[0])
+                HARobj.addHeader(AllList[0])
             else:
                 for hars in harList[1:]:
                     AllList.append(hars.getHeader(name))
                 elemList=['File' + str(i+1) +"-"+str(i) for i in range(0, len(inFileList)-1)]
                 CmbedHeader = Header.runningDiff(AllList, elemList=elemList,headerName=name)
-                cls.addHeader(CmbedHeader)
-        return cls
+                HARobj.addHeader(CmbedHeader)
+        return HARobj
 
 
 

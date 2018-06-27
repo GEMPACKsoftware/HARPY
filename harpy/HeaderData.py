@@ -8,7 +8,6 @@ class HeaderData(object):
     vice-versa?"""
 
     def __init__(self):
-        self.f = None
         self.FileDims = None
         self._LongName = ' ' * 70
         self.StorageType = ' '
@@ -23,55 +22,55 @@ class HeaderData(object):
         self.VersionOnFile = 0
         self.hasElements=False
 
-    def _readHeader(self, pos):
+    def _readHeader(self, IOObj, pos):
         """TODO: Suggestion - This method relies on the \'nextHeader\' method to work, which is in the HAR_IO class, \
         but will only be available if a Header object has been initialised. Basically, the superclass relies on the \
         existence of a subclass which is an improper dependency relationship."""
         # type: (int) -> ?
-        self.f.seek(pos)
+        IOObj.seek(pos)
 
-        newpos, name = self.f.nextHeader() # This relies on a subclass creating the 'f' object, which declares this method
+        newpos, name = IOObj.nextHeader() # This relies on a subclass creating the 'f' object, which declares this method
 
         name=name.strip().upper()
 
         if newpos != pos or self._HeaderName != name.strip():
             raise RuntimeError("Header " + self._HeaderName + "not at indicated position")
 
-        Version, DataType, self.StorageType, self._LongName, self.FileDims = self.f.parseSecondRec(name)
+        Version, DataType, self.StorageType, self._LongName, self.FileDims = IOObj.parseSecondRec(name)
 
         # readHeader methods alter HeaderData._DataObj, possibly HeaderData.f object
         if Version == 1:
             self._role="data"
             if DataType == '1C':
-                readHeader1C(self)
+                readHeader1C(self, IOObj)
                 if self._LongName.lower().startswith('set '):
                     self._role = 'set'
                     self._setNames= [self._LongName.split()[1]]
             elif DataType == 'RE':
                 self.hasElements=True
-                readHeader7D(self, True)
+                readHeader7D(self, IOObj, True)
             elif DataType == 'RL':
-                readHeader7D(self, False)
+                readHeader7D(self, IOObj, False)
             elif DataType == '2R':
-                readHeader2D(self, 'f')
+                readHeader2D(self, IOObj, 'f')
             elif DataType == '2I':
-                readHeader2D(self, 'i')
+                readHeader2D(self, IOObj,  'i')
 
 
 
-    def _writeHeader(self):
+    def _writeHeader(self,IOObj):
 
         typeString = str(self._DataObj.dtype)
         hasElements = isinstance(self._setNames,list)
         if 'float32' == typeString and (self._DataObj.ndim != 2 or hasElements):
-            writeHeader7D(self)
+            writeHeader7D(self, IOObj)
         elif 'int32' == typeString or 'float32' == typeString:
-            writeHeader2D(self)
+            writeHeader2D(self, IOObj)
         elif '<U' in typeString or '|S' in typeString:
             if self._DataObj.ndim > 1:
                 print('"' + self.name + '" can not be written as Charcter arrays ndim>1 are not yet supported')
                 return
-            writeHeader1C(self)
+            writeHeader1C(self, IOObj)
         else:
             raise Exception('Can not write data in Header: "' +
                             self.name + '" as data style does not match any known Header type')

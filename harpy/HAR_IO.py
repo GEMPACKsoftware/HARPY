@@ -49,11 +49,21 @@ class HAR_IO(object):
         :rtype: HAR_IO
         """
         if mode not in "arw": raise Exception("Unknown mode to open file")
-        self.f = open(fname, mode+'+b')
+        if mode == "r" and not os.path.isfile(fname):
+            raise Exception("File "+fname+" does not exist")
+
+        self.fname = fname
+        self.mode  = mode
         self.endian = "="
         self.header = "i"
 
-    def __del__(self):
+
+    def __enter__(self):
+
+        self.f = open(self.fname, self.mode + '+b')
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
         self.f.close()
 
     def nextHeader(self):
