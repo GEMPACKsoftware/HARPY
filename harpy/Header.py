@@ -39,7 +39,7 @@ class Header(HeaderData):
         self._HeaderName = HeaderName
 
     @staticmethod
-    def HeaderFromFile(name, pos, HARFile):
+    def HeaderFromFile(name, pos, IOObj):
         """
         Reads a Header from file.
         This function should only be invoked from class HAR as this knows the position of the Header
@@ -52,11 +52,10 @@ class Header(HeaderData):
         """TODO: Suggestion - change from staticmethod to staticmethod. Not clear why \'HeaderObj\' argument is being passed, \
         # given that it is immediately overwritten by a call to Header() on the first line and therefore redundant..."""
         HeaderObj=Header()
-        HeaderObj.f=HARFile
         HeaderObj._HeaderName=name
 
         try:
-            HeaderObj._readHeader(pos) # Method inherited from HeaderData class
+            HeaderObj._readHeader(IOObj,pos) # Method inherited from HeaderData class
         except:
             HeaderObj._invalidateHeader()
         return HeaderObj
@@ -143,17 +142,16 @@ class Header(HeaderData):
         return myHeader
 
 
-    def HeaderToFile(self,HARFile):
+    def HeaderToFile(self,IOObj):
         """
         Should only be called from class HAR
 
         :param HARFile: file object to which the Header will be written
         :return:
         """
-        self.f=HARFile
-        pos=self.f.tell()
+        pos=IOObj.tell()
         try:
-            self._writeHeader()
+            self._writeHeader(IOObj)
         except:
             traceback.print_exc()
             print('Error while writing Header "' + self._HeaderName + '"\n The program will continue but header is not put on file')
@@ -469,9 +467,10 @@ class Header(HeaderData):
     def __rsub__(self, other):
         op="Subtraction"
         if isinstance(other,Header):
-            self._verifyHeaders(op, other)
+            self._checkShapes(op, other.DataObj)
             newarray=other.DataObj-self.DataObj
         elif isinstance(other,(int,float)):
+            self._checkShapes(op, other)
             newarray=other-self.DataObj
         else:
             raise Exception("Only Header or scalar allowed in subtraction")
@@ -482,9 +481,10 @@ class Header(HeaderData):
     def __sub__(self, other):
         op="Subtraction"
         if isinstance(other,Header):
-            self._verifyHeaders(op, other)
+            self._checkShapes(op, other.DataObj)
             newarray=self.DataObj-other.DataObj
         elif isinstance(other,(int,float)):
+            self._checkShapes(op, other)
             newarray=self.DataObj-other
         else:
             raise Exception("Only Header or scalar allowed in subtraction")
@@ -498,9 +498,10 @@ class Header(HeaderData):
     def __add__(self, other):
         op="Addition"
         if isinstance(other,Header):
-            self._verifyHeaders(op, other)
+            self._checkShapes(op, other.DataObj)
             newarray=self.DataObj+other.DataObj
         elif isinstance(other, np.ndarray):
+            self._checkShapes(op, other)
             newarray = self.DataObj + other
         elif isinstance(other,(int,float)):
             newarray=self.DataObj+other
@@ -520,9 +521,10 @@ class Header(HeaderData):
     def __mul__(self, other):
         op="Multiplication"
         if isinstance(other,Header):
-            self._verifyHeaders(op, other)
+            self._checkShapes(op, other.DataObj)
             newarray=self.DataObj*other.DataObj
         elif isinstance(other, np.ndarray):
+            self._checkShapes(op, other)
             newarray = self.DataObj * other
         elif isinstance(other,(int,float)):
             newarray=self.DataObj*other
@@ -534,9 +536,10 @@ class Header(HeaderData):
     def __rfloordiv__(self, other):
         op="Division"
         if isinstance(other,Header):
-            self._verifyHeaders(op, other)
+            self._checkShapes(op, other.DataObj)
             newarray=other.DataObj//self.DataObj
         elif isinstance(other,np.ndarray):
+            self._checkShapes(op, other)
             newarray = other // self.DataObj
         elif isinstance(other,(int,float)):
             newarray=other//self.DataObj
@@ -549,9 +552,10 @@ class Header(HeaderData):
     def __floordiv__(self, other):
         op="Division"
         if isinstance(other,Header):
-            self._verifyHeaders(op, other)
+            self._checkShapes(op, other.DataObj)
             newarray=self.DataObj//other.DataObj
         elif isinstance(other, np.ndarray):
+            self._checkShapes(op, other)
             newarray=self.DataObj//other
         elif isinstance(other,(int,float)):
             newarray=self.DataObj//other
@@ -564,9 +568,10 @@ class Header(HeaderData):
     def __rtruediv__(self, other):
         op="Division"
         if isinstance(other,Header):
-            self._verifyHeaders(op, other)
+            self._checkShapes(op, other.DataObj)
             newarray=other.DataObj/self.DataObj
         elif isinstance(other,np.ndarray):
+            self._checkShapes(op, other)
             newarray = other / self.DataObj
         elif isinstance(other,(int,float)):
             newarray=other/self.DataObj
@@ -579,9 +584,10 @@ class Header(HeaderData):
     def __truediv__(self, other):
         op="TrueDivision"
         if isinstance(other,Header):
-            self._verifyHeaders(op, other)
+            self._checkShapes(op, other.DataObj)
             newarray=self.DataObj/other.DataObj
         elif isinstance(other, np.ndarray):
+            self._checkShapes(op, other)
             newarray=self.DataObj/other
         elif isinstance(other,(int,float)):
             newarray=self.DataObj/other
@@ -594,9 +600,10 @@ class Header(HeaderData):
     def __pow__(self,other):
         op="Power"
         if isinstance(other,Header):
-            self._verifyHeaders(op, other)
+            self._checkShapes(op, other.DataObj)
             newarray=self.DataObj**other.DataObj
         elif isinstance(other, np.ndarray):
+            self._checkShapes(op, other)
             newarray = self.DataObj ** other
         elif isinstance(other,(int,float)):
             newarray=self.DataObj**other
@@ -607,8 +614,8 @@ class Header(HeaderData):
                                    sets=self.SetNames, SetElements=[self.SetElements[nam] for nam in self.SetNames])
 
 
-    def _verifyHeaders(self, op, other):
-        if not self.DataObj.shape == other.DataObj.shape:
+    def _checkShapes(self, op, other):
+        if not self.DataObj.shape == other.shape:
             raise Exception("Headers with different shape not permitted in " + op)
         # if self.SetNames != other.SetNames:
         #     print("Warning: Headers " + self.HeaderName + " and " + other.HeaderName + " in " + op + " have different sets associated.")
@@ -737,7 +744,6 @@ class Header(HeaderData):
         new = Header(HeaderName=self._HeaderName)
 
         attrs = set(self.__dict__.keys())
-        attrs.remove('f') # Remove unserialisable attributes
 
         for k in attrs:
             setattr(new, k, copy.deepcopy(getattr(self, k)))
