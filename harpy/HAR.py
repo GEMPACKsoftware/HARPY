@@ -131,8 +131,8 @@ class HAR(object):
                 Header.HeaderToFile(self.f)
         self.f.f.flush()
 
-    @classmethod
-    def cmbhar(cls,inFileList,outfile):
+    @staticmethod
+    def cmbhar(inFileList,outfile):
         """
 
 
@@ -142,7 +142,7 @@ class HAR(object):
         :type outfile: str
         :return:
         """
-        cls=HAR(outfile,'w')
+        HARobj=HAR(outfile,'w')
         harList=[]
         for myFile in inFileList:
             harList.append(HAR(myFile,'r'))
@@ -150,18 +150,18 @@ class HAR(object):
         for name in refHAR.HeaderNames():
             AllList=[refHAR.getHeader(name)]
             if not 'float' in str(AllList[0].DataObj.dtype):
-                cls.addHeader(AllList[0])
+                HARobj.addHeader(AllList[0])
             else:
                 for hars in harList[1:]:
                     AllList.append(hars.getHeader(name))
                 CmbedHeader=Header.concatenate(AllList,elemList=['File'+str(i) for i in range(0,len(inFileList))],
                                                headerName=name)
-                cls.addHeader(CmbedHeader)
-        return cls
+                HARobj.addHeader(CmbedHeader)
+        return HARobj
 
 
-    @classmethod
-    def diffhar(cls, inFileList, outfile):
+    @staticmethod
+    def diffhar(inFileList, outfile):
         """
         computes the running difference between a set of har files.
         Differences are always taken between consecutive entries in the inFileList
@@ -172,7 +172,7 @@ class HAR(object):
         :type outfile: str
         :return:
         """
-        cls = HAR(outfile, 'w')
+        HARobj = HAR(outfile, 'w')
         harList = []
         for myFile in inFileList:
             harList.append(HAR(myFile, 'r'))
@@ -180,14 +180,14 @@ class HAR(object):
         for name in refHAR.HeaderNames():
             AllList = [refHAR.getHeader(name)]
             if not 'float' in str(AllList[0].DataObj.dtype):
-                cls.addHeader(AllList[0])
+                HARobj.addHeader(AllList[0])
             else:
                 for hars in harList[1:]:
                     AllList.append(hars.getHeader(name))
                 elemList=['File' + str(i+1) +"-"+str(i) for i in range(0, len(inFileList)-1)]
                 CmbedHeader = Header.runningDiff(AllList, elemList=elemList,headerName=name)
-                cls.addHeader(CmbedHeader)
-        return cls
+                HARobj.addHeader(CmbedHeader)
+        return HARobj
 
 
 

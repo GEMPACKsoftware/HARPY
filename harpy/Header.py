@@ -38,8 +38,8 @@ class Header(HeaderData):
         self.Error = ''
         self._HeaderName = HeaderName
 
-    @classmethod
-    def HeaderFromFile(cls, name, pos, HARFile):
+    @staticmethod
+    def HeaderFromFile(name, pos, HARFile):
         """
         Reads a Header from file.
         This function should only be invoked from class HAR as this knows the position of the Header
@@ -49,25 +49,25 @@ class Header(HeaderData):
         :param (HAR_IO) HARFile: file object containing the Header
         :return: Header object
         """
-        """TODO: Suggestion - change from classmethod to staticmethod. Not clear why \'cls\' argument is being passed, \
+        """TODO: Suggestion - change from staticmethod to staticmethod. Not clear why \'HeaderObj\' argument is being passed, \
         # given that it is immediately overwritten by a call to Header() on the first line and therefore redundant..."""
-        cls=Header()
-        cls.f=HARFile
-        cls._HeaderName=name
+        HeaderObj=Header()
+        HeaderObj.f=HARFile
+        HeaderObj._HeaderName=name
 
         try:
-            cls._readHeader(pos) # Method inherited from HeaderData class
+            HeaderObj._readHeader(pos) # Method inherited from HeaderData class
         except:
-            cls._invalidateHeader()
-        return cls
+            HeaderObj._invalidateHeader()
+        return HeaderObj
 
     def _invalidateHeader(self):
         traceback.print_exc()
         print('Encountered an error in Header ' + self._HeaderName + ':\n')
         self.Error = sys.exc_info()[1]
 
-    @classmethod
-    def HeaderFromConstant(cls, name, label=None, CName=None,sets=None,SetElements=None, dims=None, value=None):
+    @staticmethod
+    def HeaderFromConstant(name, label=None, CName=None,sets=None,SetElements=None, dims=None, value=None):
         if SetElements is None and dims is None:
             raise Exception("Header from constant needs either SetElements or dims")
         if not (SetElements is None or dims is None):
@@ -86,10 +86,10 @@ class Header(HeaderData):
                 if not all([set in SetElements for set in sets]): raise Exception("Not all sets in SetElement Dict")
                 dims=tuple([len(SetElements[set]) for set in sets])
 
-        return cls.HeaderFromData(name, np.full(dims,value), label=label, CName=CName,sets=sets,SetElements=SetElements)
+        return Header.HeaderFromData(name, np.full(dims,value), label=label, CName=CName,sets=sets,SetElements=SetElements)
 
-    @classmethod
-    def HeaderFromData(cls, name, array, label=None, CName=None,sets=None,SetElements=None):
+    @staticmethod
+    def HeaderFromData(name, array, label=None, CName=None,sets=None,SetElements=None):
         """
         Creates a new Header object from basic data. only Header name and data array are mandatory
 
@@ -104,28 +104,28 @@ class Header(HeaderData):
         :rtype: Header
 
         """
-        cls=Header()
-        cls.HeaderName=name
-        cls.DataObj=array
-        if label: cls.HeaderLabel=label
-        else: cls.HeaderLabel=name
-        if CName: cls.CoeffName=CName
-        else: cls.CoeffName=name
+        HeaderObj=Header()
+        HeaderObj.HeaderName=name
+        HeaderObj.DataObj=array
+        if label: HeaderObj.HeaderLabel=label
+        else: HeaderObj.HeaderLabel=name
+        if CName: HeaderObj.CoeffName=CName
+        else: HeaderObj.CoeffName=name
         if sets:
             if not SetElements: SetElements=[None for i in range(0,len(sets))]
-        cls.SetNames=sets
+        HeaderObj.SetNames=sets
         if sets:
             if isinstance(SetElements,list):
                 if not (isinstance(SetElements[0],list) or SetElements[0] is None):
                     raise Exception("Set Elements must be list of list of element names, received only list of element names")
-                cls.SetElements=dict(zip(sets,SetElements))
-            elif isinstance(SetElements,dict) : cls.SetElements= SetElements
+                HeaderObj.SetElements=dict(zip(sets,SetElements))
+            elif isinstance(SetElements,dict) : HeaderObj.SetElements= SetElements
             else: raise Exception("Set Elements have to be a list of lists (in set order) or a dict mapping sets to elements")
 
-        return cls
+        return HeaderObj
 
-    @classmethod
-    def SetHeaderFromData(cls,name,array,SName,label=None):
+    @staticmethod
+    def SetHeaderFromData(name,array,SName,label=None):
         """
         Create a Header object which contains the marker of a set Header (ViewHar might need to know)
 
@@ -138,7 +138,7 @@ class Header(HeaderData):
         """
         setLabel="Set "+SName
         if label:setLabel=setLabel+" "+label
-        myHeader=cls.HeaderFromData(name, array, setLabel)
+        myHeader=Header.HeaderFromData(name, array, setLabel)
         myHeader._role="set"
         return myHeader
 
@@ -623,8 +623,8 @@ class Header(HeaderData):
     def append(self,other,axis):
         pass
 
-    @classmethod
-    def concatenate(cls,headerList,setName='',elemList=None,headerName=''):
+    @staticmethod
+    def concatenate(headerList,setName='',elemList=None,headerName=''):
         if not headerName: headerName=Header._mkHeaderName()
         if not setName: setName='CONCAT'
         if not elemList: elemList=['elem'+str(i) for i in range(0,len(headerList))]
@@ -648,8 +648,8 @@ class Header(HeaderData):
         return Header.HeaderFromData(headerName, newarray, label="Concatenated", CName="Concat",
                                    sets=newset,SetElements=newDesc)
 
-    @classmethod
-    def runningDiff(cls,headerList,setName='',elemList=None,headerName=''):
+    @staticmethod
+    def runningDiff(headerList,setName='',elemList=None,headerName=''):
         if not headerName: headerName=Header._mkHeaderName()
         if not setName: setName='CONCAT'
         if not elemList: elemList=['elem'+str(i) for i in range(0,len(headerList)-1)]
@@ -693,18 +693,16 @@ class Header(HeaderData):
     def nan_to_number(self, number=0):
         self._DataObj=np.nan_to_num(self._DataObj,number)
 
-    @classmethod
-    def sum(cls,Header,axis=None):
-        outHeader=cls._reduce(Header,axis=axis,npfunction=np.sum)
-        return outHeader
+    @staticmethod
+    def sum(Header,axis=None):
+        return HeaderObj._reduce(Header,axis=axis,npfunction=np.sum)
 
-    @classmethod
-    def mean(cls,Header,axis=None):
-        outHeader=cls._reduce(Header,axis=axis,npfunction=np.mean)
-        return outHeader
+    @staticmethod
+    def mean(Header,axis=None):
+        return HeaderObj._reduce(Header,axis=axis,npfunction=np.mean)
 
-    @classmethod
-    def _reduce(cls,Header,axis=None,npfunction=None):
+    @staticmethod
+    def _reduce(Header,axis=None,npfunction=None):
         if not axis is None:
             if isinstance(axis,str):
                 myaxis = Header.setNameToIndex(axis)
@@ -724,7 +722,7 @@ class Header(HeaderData):
         else:
             newarray = npfunction(Header.DataObj)
             newSet=[]
-        return cls.HeaderFromData(cls._mkHeaderName(),array=newarray,sets=newSet,SetElements=Header.SetElements)
+        return Header.HeaderFromData(HeaderObj._mkHeaderName(),array=newarray,sets=newSet,SetElements=Header.SetElements)
 
     def setNameToIndex(self, axis):
         nsets = self._setNames.count(axis)
