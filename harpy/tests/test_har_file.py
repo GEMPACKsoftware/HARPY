@@ -79,7 +79,10 @@ class TestHarFileObj(unittest.TestCase):
 
         self.assertTrue(all([x == y for (x, y) in zip(hn, test_hn)]))
 
-        hfo.addHeaderArrayObjs(hao)
+        hfo.addHeaderArrayObjs("INTA", hao)
+
+        with self.assertRaises(HarFileObj.InvalidHeaderArrayName):
+            hfo.addHeaderArrayObjs("TOO LONG NAME", hao)
 
         hn = hfo.getHeaderArrayNames()
         test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'SIMP', 'SIM2', 'NH01', 'ARR7', 'INTA']

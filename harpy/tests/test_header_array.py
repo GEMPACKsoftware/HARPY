@@ -33,18 +33,17 @@ class TestHeaderArray(unittest.TestCase):
         array_7d = np.array(list(range(2**7)))
         array_7d.reshape((2, 2, 2, 2, 2, 2, 2))
 
-        with self.assertRaises(HeaderArrayObj.InvalidHeaderArrayName):
-            HeaderArrayObj.HeaderArrayFromData(name="NAME_THAT_IS_TOO_LONG", array=array_1d)
 
-        hao = HeaderArrayObj.HeaderArrayFromData(name="ARR1", array=array_1d)
+
+        hao = HeaderArrayObj.HeaderArrayFromData(array=array_1d)
         self.assertTrue(hao.is_valid())
         # TODO: Include array type-checking
 
-        hao = HeaderArrayObj.HeaderArrayFromData(name="ARR2", array=array_2d)
+        hao = HeaderArrayObj.HeaderArrayFromData(array=array_2d)
         self.assertTrue(hao.is_valid())
         # TODO: Include array type-checking
 
-        hao = HeaderArrayObj.HeaderArrayFromData(name="ARR7", array=array_7d)
+        hao = HeaderArrayObj.HeaderArrayFromData(array=array_7d)
         self.assertTrue(hao.is_valid())
         # TODO: Include array type-checking
 
@@ -52,8 +51,8 @@ class TestHeaderArray(unittest.TestCase):
 
         array_2d = np.array([[1.0, 2.0], [3.0, 4.0]])
 
-        hao1 = HeaderArrayObj.HeaderArrayFromData(name="ARRA", array=array_2d)
-        hao2 = HeaderArrayObj.HeaderArrayFromData(name="ARRB", array=array_2d)
+        hao1 = HeaderArrayObj.HeaderArrayFromData( array=array_2d)
+        hao2 = HeaderArrayObj.HeaderArrayFromData( array=array_2d)
 
         hao3 = hao1 + hao2
 

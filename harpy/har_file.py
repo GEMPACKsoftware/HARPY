@@ -10,8 +10,9 @@ Created on Mar 12 09:53:27 2018
 
 from .har_file_io import HarFileIO
 from .header_array import HeaderArrayObj
+from collections import OrderedDict
 
-class HarFileObj(dict):
+class HarFileObj(object):
     """
     HAR file object - essentially a memory representation of a HAR file.
 
@@ -21,7 +22,7 @@ class HarFileObj(dict):
     def __init__(self, *args, filename: str=None, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self["head_arrs"] = []
+        self.head_arrs = OrderedDict()
 
         if isinstance(filename, str):
             self = HarFileObj.loadFromDisk(filename)
@@ -31,26 +32,15 @@ class HarFileObj(dict):
         """
         :return: Returns the name of all ``harpy.HeaderArrayObj()`` stored with ``self``.
         """
-        return [h["name"] for h in self["head_arrs"]]
+        return self.head_arrs.keys()
 
     def getRealHeaderArrayNames(self):
         """
         :return: Returns only the names of arrays of type 2D or 7D - i.e. multi-dimensional header arrays of floating point numbers.
         """
 
-        return [h["name"] for h in self["head_arrs"] if h["data_type"] in ["RE"]]
+        return [key for key,val in self.head_arrs.items() if val["data_type"] in ["RE"]]
 
-
-    def getHeaderArrayObjIdx(self, ha_name):
-        """
-        :param ha_name: Name of Header Array.
-        :return int: The `list` index of the ``harpy.HeaderArrayObj``.
-        """
-        for idx, hao in enumerate(self["head_arrs"]):
-            if hao["name"] == ha_name:
-                return idx
-        else:
-            raise ValueError("HeaderArrayObj '%s' does not exist in HarFileObj. A possible cause is that the HeaderArrayObj has not been read into memory." % (ha_name))
 
     def getHeaderArrayObj(self, ha_name: str):
         """
@@ -63,9 +53,10 @@ class HarFileObj(dict):
         if not isinstance(ha_name, str):
             raise TypeError("'ha_name' must be a string.")
 
-        idx = self.getHeaderArrayObjIdx(ha_name=ha_name)
+        if not ha_name.strip().upper() in self.head_arrs:
+            raise ValueError("HeaderArrayObj '%s' does not exist in HarFileObj. A possible cause is that the HeaderArrayObj has not been read into memory." % (ha_name))
 
-        return self["head_arrs"][idx]
+        return self.head_arrs[ha_name]
 
     def getHeaderArrayObjs(self, ha_names=None):
         """
@@ -93,8 +84,9 @@ class HarFileObj(dict):
         :param 'Union[None,str,List[str]]' ha_names:
         :return: `None`
         """
+        hnames, haos = HarFileIO.readHeaderArraysFromFile(filename=filename, ha_names=ha_names)
+        self.head_arrs=OrderedDict(zip(hnames,haos))
 
-        self["head_arrs"] = HarFileIO.readHeaderArraysFromFile(filename=filename, ha_names=ha_names)
 
     def writeToDisk(self, filename: str, ha_names=None):
         """
@@ -109,44 +101,50 @@ class HarFileObj(dict):
 
         ha_to_write = self.getHeaderArrayObjs(ha_names)
 
-        HarFileIO.writeHeaders(filename, ha_to_write)
+        HarFileIO.writeHeaders(filename, ha_names, ha_to_write)
 
     def removeHeaderArrayObjs(self, ha_names):
         """
+        TODO: its more of a pop, not a remove, maybe rename
         :param 'Union[str,List[str]]' ha_names: Remove one or more `harpy.HeaderArrayObj` from ``self``.
         """
 
         if isinstance(ha_names, str):
             ha_names = [ha_names]
 
+        outlist=[]
         for ha_name in ha_names:
-            idx = self.getHeaderArrayObjIdx(ha_name)
-            return self["head_arrs"].pop(idx)
+            if ha_name.strip().upper() in self.head_arrs:
+                outlist.append(self.head_arrs[ha_name.strip().upper()])
+                del self.head_arrs[ha_name.strip().upper()]
+        return outlist
 
-    def addHeaderArrayObjs(self, ha_objs) -> None:
+    def addHeaderArrayObjs(self, hnames, ha_objs) -> None:
         """
         :param 'Union[HeaderArrayObj,List[HeaderArrayObj]]' ha_objs: Add one or more `harpy.HeaderArrayObj` to ``self``.
         """
 
         if isinstance(ha_objs, HeaderArrayObj):
             ha_objs = [ha_objs]
+        if isinstance(hnames, str):
+            hnames = [hnames]
 
-        for ha_obj in ha_objs:
+        for hname, ha_obj in zip(hnames,ha_objs):
             if ha_obj.is_valid():
-                self.addHeaderArrayObj(ha_obj)
+                self.addHeaderArrayObj(hname, ha_obj)
 
         return None
 
-    def addHeaderArrayObj(self, ha_obj: HeaderArrayObj, idx: int=None):
+    def addHeaderArrayObj(self, hname : str, ha_obj: HeaderArrayObj):
         """
         :param ha_obj: A `harpy.HeaderArrayObj` object.
         :param idx: The index of ``self["head_arrs"]`` at which to insert ``ha_obj``.
         """
 
-        if idx is None:
-            idx = len(self["head_arrs"])
+        if len(hname.strip()) > 4:
+            raise HarFileObj.InvalidHeaderArrayName("Name of Header too long")
 
-        self["head_arrs"].insert(idx, ha_obj)
+        self.head_arrs[hname.strip().upper()]= ha_obj
 
 
     @staticmethod
@@ -162,3 +160,8 @@ class HarFileObj(dict):
         hfo.readHeaderArrayObjs(filename=filename)
 
         return hfo
+
+
+    class InvalidHeaderArrayName(ValueError):
+        """Raised if header array name is not exactly four (alphanumeric) characters long."""
+        pass
