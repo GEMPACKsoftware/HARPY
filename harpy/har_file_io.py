@@ -72,7 +72,7 @@ class HarFileInfoObj(object):
         valid=os.path.isfile(self.filename)
         if valid:
             valid= self.mtime == os.path.getmtime(self.filename)
-
+        return valid
 
 class HarFileIO(object):
 
