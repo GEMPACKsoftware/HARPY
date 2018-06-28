@@ -24,7 +24,7 @@ class TestHarFileIO(unittest.TestCase):
     def test_read_har_file_info(self):
         hfi = HarFileIO.readHarFileInfo(TestHarFileIO._dd + "test.har")
         # header_names = list(hfi["headers"].keys())
-        header_names = [ha_info["name"] for ha_info in hfi["ha_infos"]]
+        header_names = hfi.getHeaderArrayNames()
         test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'INTA', 'SIMP', 'SIM2', 'NH01', 'ARR7']
 
         self.assertTrue(all([x == y for (x,y) in zip(header_names, test_hn)]))
@@ -80,11 +80,11 @@ class TestHarFileIO(unittest.TestCase):
         self.assertTrue(chst_header.is_valid())
 
         chst_header["array"][0] = "F_string" # Change one element
-        HarFileIO.writeHeaders("temp.har", chst_header)
+        HarFileIO.writeHeaders("temp.har", ["CHST"], chst_header)
 
         hfi = HarFileIO.readHarFileInfo("temp.har")
         test_hn = ['CHST']
-        hfi_headers = [ha_info["name"] for ha_info in hfi["ha_infos"]]
+        hfi_headers = hfi.getHeaderArrayNames()
         self.assertTrue(all([x == y for (x, y) in zip(hfi_headers, test_hn)]))
 
         chst_header = HarFileIO.readHeader(hfi, "CHST")
@@ -102,7 +102,7 @@ class TestHarFileIO(unittest.TestCase):
         self.assertTrue(inta_header.is_valid())
 
         inta_header["array"][3,3] = 30
-        HarFileIO.writeHeaders("temp.har", inta_header)
+        HarFileIO.writeHeaders("temp.har", ["INTA"], inta_header)
 
         hfi = HarFileIO.readHarFileInfo("temp.har")
         inta_header = HarFileIO.readHeader(hfi, "INTA")
@@ -119,7 +119,7 @@ class TestHarFileIO(unittest.TestCase):
         self.assertTrue(arr7_header.is_valid())
 
         arr7_header["array"][1, 1, 1, 1, 1, 1, 1] = 103.14
-        HarFileIO.writeHeaders("temp.har", arr7_header)
+        HarFileIO.writeHeaders("temp.har", ["ARR7"], arr7_header)
 
         hfi = HarFileIO.readHarFileInfo("temp.har")
         inta_header = HarFileIO.readHeader(hfi, "ARR7")
@@ -142,7 +142,7 @@ class TestHarFileIO(unittest.TestCase):
         nh01 = HarFileIO.readHeader(hfi, "NH01")
         arr7 = HarFileIO.readHeader(hfi, "ARR7")
 
-        HarFileIO.writeHeaders("temp.har", [nh01, arr7])
+        HarFileIO.writeHeaders("temp.har", ["NH01", "ARR7"],[nh01, arr7])
 
         hfi = HarFileIO.readHarFileInfo("temp.har")
         hn = hfi.getHeaderArrayNames()
