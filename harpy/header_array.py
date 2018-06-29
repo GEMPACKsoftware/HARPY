@@ -199,7 +199,10 @@ class HeaderArrayObj(dict):
         if hao.is_valid():
             return hao
 
-    def array_operation(self, other: "HeaderArrayObj", operation: str, name: str="NEW1", **kwargs):
+    def array_operation(self,
+                        other: "Union[np.ndarray, HeaderArrayObj]",
+                        operation: str,
+                        name: str="NEW1", **kwargs):
         """
         This method is implemented to allow for operations on the arrays of HeaderArrayObjs. Most Tablo-like
         functionality is replicated with this method.
@@ -208,8 +211,20 @@ class HeaderArrayObj(dict):
         :param dict kwargs: Any additional kwargs are passed to the new ``HeaderArrayObj``.
         :return: A new ``HeaderArrayObj`` that results from the operation. Will have a default header name of ``"NEW1"``.
         """
-        new_array = getattr(self["array"], operation)(other["array"])
-        return HeaderArrayObj.HeaderArrayFromData(name="NEW1", array=new_array, **kwargs)
+
+        if issubclass(type(other), HeaderArrayObj):
+            other = other.array
+        elif issubclass(type(other), (float, int)):
+            other = np.ones_like(self.array)*other
+
+        try:
+            assert(issubclass(type(other), np.ndarray))
+        except AssertionError:
+            msg = "Operation is not permitted for objects that are not of 'numpy.ndarray' type, or 'HeaderArrayObj' type."
+            raise TypeError(msg)
+
+        new_array = getattr(self.array, operation)(other)
+        return HeaderArrayObj.HeaderArrayFromData(name=name, array=new_array, **kwargs)
 
     def __add__(self, other):
         return self.array_operation(other, "__add__")
