@@ -30,10 +30,15 @@ class HeaderArrayObj(dict):
 
     @property
     def coeff_name(self):
-        return self["coeff_name"]
+        return self.get("coeff_name", "")
 
     @coeff_name.setter
     def coeff_name(self, obj):
+        if not issubclass(type(obj), str):
+            msg = "'obj' must be of 'str' type."
+            raise TypeError(msg)
+        if len(obj) < 12:
+            obj.ljust(12)
         self["coeff_name"] = obj
 
     @property

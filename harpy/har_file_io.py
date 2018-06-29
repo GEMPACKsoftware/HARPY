@@ -121,6 +121,14 @@ class HarFileInfoObj(dict):
             self.pos_data = pos_data
             self.parent_har_file = parent_har_file
 
+        @property
+        def sets(self):
+            return getattr(self, "_sets", None)
+
+        @sets.setter
+        def sets(self, obj):
+            self._sets = obj
+
 
 class HarFileIO(object):
 
@@ -258,13 +266,15 @@ class HarFileIO(object):
             else:
                 raise RuntimeError("Unsupported/unrecognised HAR header version.")
 
-        return header.HeaderArrayObj(name=ha_info.name,
+        return header.HeaderArrayObj.HeaderArrayFromData(name=ha_info.name,
+                                     coeff_name=getattr(ha_info, "coeff_name", None),
+                                     long_name=ha_info.long_name,
                                      version=ha_info.version,
                                      data_type=ha_info.data_type,
                                      storage_type=ha_info.storage_type,
-                                     long_name=ha_info.long_name,
                                      file_dims=ha_info.file_dims,
-                                     array=ha_info.array)
+                                     array=ha_info.array,
+                                     sets=ha_info.sets)
 
     @staticmethod
     def _read1CArray(fp, file_dims=None, as_unicode: bool = as_unicode, ):
