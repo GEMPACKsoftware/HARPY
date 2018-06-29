@@ -5,6 +5,8 @@ Created on Mar 02 11:39:45 2018
 .. codeauthor:: Lyle Collins <Lyle.Collins@csiro.au>
 """
 import numpy as np
+from harpy._header_sets import  _HeaderDims
+
 
 
 class HeaderArrayObj(object):
@@ -104,7 +106,7 @@ class HeaderArrayObj(object):
             else:
                 return False
 
-        if (self.sets is not None) and (not isinstance(self._sets, list)):
+        if (self.sets is not None) and (not isinstance(self._sets, _HeaderDims)):
             raise TypeError("'sets' must be a list or None.")
 
         if not isinstance(self.long_name, str):
