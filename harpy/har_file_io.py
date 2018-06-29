@@ -14,6 +14,7 @@ import math
 import numpy as np
 
 import harpy.header_array as header
+from harpy._header_sets import _HeaderSet
 
 # compatibility function for python 2.7/3.x
 if sys.version_info < (3,):
@@ -52,27 +53,77 @@ class HarFileInfoObj(object):
         """
         self.filename = os.path.abspath(file)
         if os.path.isfile(self.filename):
-            self.mtime = os.path.getmtime(self.filename)
+            self._mtime = os.path.getmtime(self.filename)
         if ha_infos is None:
-            self.ha_infos = OrderedDict()
+            self._ha_infos = OrderedDict()
 
-    def addHAInfo(self, name, name_pos, data_pos):
+
+    def addHAInfo(self, name, pos_name, pos_data):
         name=name.strip().upper()
-        self.ha_infos[name]={"pos_name":name_pos, "pos_data": data_pos}
+        self._ha_infos[name] = HarFileInfoObj._HAInfo(name, pos_name, pos_data, parent_har_file=self)
+
 
     def getHeaderArrayNames(self):
-        return self.ha_infos.keys()
+        return self._ha_infos.keys()
+
+    @property
+    def file(self):
+        return self._file
+
+    @file.setter
+    def file(self, obj):
+        try:
+            assert(issubclass(type(obj), str))
+        except AssertionError:
+            msg = "'obj' is not a subclass of 'str' ('obj' is of type %s)." % type(obj)
+            raise TypeError(msg)
+        self.filename = obj
+
+    @property
+    def ha_infos(self):
+        return self._ha_infos
+
+    @ha_infos.setter
+    def ha_infos(self, obj):
+        self._ha_infos = obj
 
     def getHeaderArrayInfo(self, ha_name: str):
-        if not ha_name.strip().upper() in self.ha_infos:
+        if not ha_name.strip().upper() in self._ha_infos:
             raise ValueError("'%s' does not exist in har file '%s'." % (ha_name, self.filename))
-        return self.ha_infos[ha_name.strip().upper()]
+        return self._ha_infos[ha_name.strip().upper()]
 
     def is_valid(self):
         valid=os.path.isfile(self.filename)
         if valid:
-            valid= self.mtime == os.path.getmtime(self.filename)
+            valid= self._mtime == os.path.getmtime(self.filename)
         return valid
+
+
+    class _HAInfo(object):
+        """HAInfo is for Header-Array specific information. Any header array written to disk must exist in a HarFile, hence the nesting of ``_HAInfo`` within ``HarFileInfoObj``."""
+
+        def __init__(self, name, pos_name, pos_data, parent_har_file=None):
+            # TODO: Perform checks on name, pos_name, pos_data
+            self.name = name
+            self.pos_name = pos_name
+            self.pos_data = pos_data
+            self.parent_har_file = parent_har_file
+            self.version = 0
+            self.data_type = None
+            self.storage_type = None
+            self.long_name = None
+            self.file_dims = None
+            self.sets      = None
+            self.coeff_name = None
+
+        @property
+        def sets(self):
+            return getattr(self, "_sets", None)
+
+        @sets.setter
+        def sets(self, obj):
+            self._sets = obj
+
 
 class HarFileIO(object):
 
@@ -106,7 +157,6 @@ class HarFileIO(object):
                 if not name:
                     break
                 hfi.addHAInfo(name, pos, end_pos)
-                # hfi["ha_infos"].append(header.HeaderArrayObj({"name": name, "pos_name": pos, "pos_data": end_pos}))
 
         return hfi
 
@@ -166,52 +216,57 @@ class HarFileIO(object):
         hfi.is_valid()
         ha_info = hfi.getHeaderArrayInfo(header_name)
 
-        header_dict = ha_info
-
         with open(hfi.filename, "rb") as fp:
 
             try:
-                fp.seek(header_dict["pos_name"])
+                fp.seek(ha_info.pos_name)
             except KeyError:
                 raise KeyError("Header '%s' does not exist in file." % header_name)
 
-            fp.seek(header_dict["pos_data"])
+            fp.seek(ha_info.pos_data)
 
-            (header_dict["version"],
-             header_dict["data_type"],
-             header_dict["storage_type"],
-             header_dict["long_name"],
-             header_dict["file_dims"]) = HarFileIO._getHeaderInfo(fp, header_name)
+            (ha_info.version,
+             ha_info.data_type,
+             ha_info.storage_type,
+             ha_info.long_name,
+             ha_info.file_dims) = HarFileIO._getHeaderInfo(fp, header_name)
 
             # # readHeader methods alter self._DataObj, self.RealDim, self.DataDimension, self.StorageType possibly self.f
-            if header_dict["version"] == 1:
-                header_dict["header_type"] = "data"
-                if header_dict["data_type"] == '1C':
-                    header_dict["array"] = HarFileIO._read1CArray(fp, file_dims=header_dict["file_dims"])
-                    # if header_dict["long_name"].lower().startswith('set '):
-                    #     header_dict["header_type"] = "set"
-                    #     header_dict["_setNames"] = [header_dict["long_name"].split()[1]]
-                elif header_dict["data_type"] == 'RE':
-                    header_dict["has_elements"] = True
-                    header_dict["array"] = HarFileIO._readREArray(fp, header_dict, file_dims=header_dict["file_dims"])
+            if ha_info.version == 1:
+                ha_info.header_type = "data"
+                if ha_info.data_type == '1C':
+                    ha_info.array = HarFileIO._read1CArray(fp, file_dims=ha_info.file_dims)
+                    # if ha_info["long_name"].lower().startswith('set '):
+                    #     ha_info["header_type"] = "set"
+                    #     ha_info["_setNames"] = [ha_info["long_name"].split()[1]]
+                elif ha_info.data_type == 'RE':
+                    ha_info.has_elements = True
+                    ha_info.array = HarFileIO._readREArray(fp, ha_info, file_dims=ha_info.file_dims)
                 # elif DataType == 'RL':
                 #     readHeader7D(self, False)
-                elif header_dict["data_type"] in ['2R', '2I']:
-                    if header_dict["data_type"] in ['2R']:
+                elif ha_info.data_type in ['2R', '2I']:
+                    if ha_info.data_type in ['2R']:
                         data_type = 'f'
                     else:
                         data_type = 'i'
 
-                    header_dict["array"] = HarFileIO._read2DArray(fp, data_type=data_type,
-                                                               file_dims=header_dict["file_dims"],
-                                                               storage_type=header_dict["storage_type"])
+                    ha_info.array = HarFileIO._read2DArray(fp, data_type=data_type,
+                                                               file_dims=ha_info.file_dims,
+                                                               storage_type=ha_info.storage_type)
 
                 else:
-                    raise ValueError("Data type '%s' is unsupported." % (header_dict["data_type"]))
+                    raise ValueError("Data type '%s' is unsupported." % (ha_info.data_type))
             else:
                 raise RuntimeError("Unsupported/unrecognised HAR header version.")
 
-        return header.HeaderArrayObj(header_dict)
+        return header.HeaderArrayObj.HeaderArrayFromData(coeff_name=ha_info.coeff_name,
+                                     long_name=ha_info.long_name,
+                                     version=ha_info.version,
+                                     data_type=ha_info.data_type,
+                                     storage_type=ha_info.storage_type,
+                                     file_dims=ha_info.file_dims,
+                                     array=ha_info.array,
+                                     sets=ha_info.sets)
 
     @staticmethod
     def _read1CArray(fp, file_dims=None, as_unicode: bool = as_unicode, ):
@@ -272,7 +327,7 @@ class HarFileIO(object):
         return array
 
     @staticmethod
-    def _readREArray(fp: io.BufferedReader, header_info: dict, file_dims: tuple = None, hasSets=True):
+    def _readREArray(fp: io.BufferedReader, header_info: HarFileInfoObj._HAInfo, file_dims: tuple = None, hasSets=True):
         """
 
         :param fp:
@@ -283,11 +338,11 @@ class HarFileIO(object):
         """
 
         if hasSets:
-            (header_info["coeff_name"], header_info["sets"]) = HarFileIO._readSets(fp, file_dims=file_dims)
+            (header_info.coeff_name, header_info.sets) = HarFileIO._readSets(fp, file_dims=file_dims)
 
             # print("har_io._read7DArray() set_names ", [set["name"] for set in header_info["sets"]])
 
-            tmpDim = len(header_info["sets"])
+            tmpDim = len(header_info.sets)
         else:
             tmpDim = 7
 
@@ -296,7 +351,7 @@ class HarFileIO(object):
 
         # print("har_io._read7DArray() header_info[\"storage_type\"]", header_info["storage_type"])
         # print(header_info["storage_type"] == 'FULL')
-        if header_info["storage_type"] == 'FULL':
+        if header_info.storage_type == 'FULL':
             array = HarFileIO._readREFullObj(fp, array, 'f')
         else:
             array = HarFileIO._readRESparseObj(fp, array, 'f')
@@ -545,12 +600,13 @@ class HarFileIO(object):
                 if name not in processedSet:
                     processedSet[name] = HarFileIO._readCharVec(fp, itemsize=12, as_unicode=as_unicode, size=tuple([file_dims[idim]]),
                                     dtype="<U12")
-                header_sets.append({"name": name, "status": status, "dim_type": "Set",
-                                    "dim_desc": [item.strip() for item in processedSet[name]]})
+                header_sets.append(_HeaderSet(name=name, status=status,
+                                              dim_type="Set",
+                                   dim_desc=[item.strip() for item in processedSet[name]]))
             elif status == 'u':
-                header_sets.append({"name": name, "status": status, "dim_type": "Num", "dim_desc": None})
+                header_sets.append(_HeaderSet(name=name, status=status, dim_type="Num", dim_desc=None))
             elif status == 'e':
-                header_sets.append({"name": name, "status": status, "dim_type": "El", "dim_desc": ElementList.pop(0)})
+                header_sets.append(_HeaderSet(name=name, status=status, dim_type="El", dim_desc=ElementList.pop(0)))
             idim += 1
 
         return Coefficient, header_sets
@@ -912,9 +968,11 @@ class HarFileIO(object):
                         # Elements,
                         # CName,
                         header_arr_obj: header.HeaderArrayObj):
-        sets = [set["name"] for set in header_arr_obj["sets"]]
-        indexTypes = [set["dim_type"] for set in header_arr_obj["sets"]]
-        Elements = [set["dim_desc"] for set in header_arr_obj["sets"]]
+
+        sets = [set.name for set in header_arr_obj["sets"]]
+        indexTypes = [set.dim_type for set in header_arr_obj["sets"]]
+        Elements = [set.dim_desc for set in header_arr_obj["sets"]]
+
         CName = header_arr_obj["coeff_name"]
         tmp = {}
         elList = []

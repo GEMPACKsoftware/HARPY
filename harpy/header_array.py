@@ -12,9 +12,81 @@ class HeaderArrayObj(dict):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    @property
+    def array(self):
+        return self["array"]
+
+    @array.setter
+    def array(self, obj):
+        self["array"] = obj
+
+    @property
+    def coeff_name(self):
+        return self.get("coeff_name", "")
+
+    @coeff_name.setter
+    def coeff_name(self, obj):
+        if not issubclass(type(obj), str):
+            msg = "'obj' must be of 'str' type."
+            raise TypeError(msg)
+        if len(obj) < 12:
+            obj.ljust(12)
+        self["coeff_name"] = obj
+
+    @property
+    def long_name(self):
+        return self["long_name"]
+
+    @long_name.setter
+    def long_name(self, obj):
+        self["long_name"] = obj
+
+    @property
+    def data_type(self):
+        return self["data_type"]
+
+    @data_type.setter
+    def data_type(self, obj):
+        self["data_type"] = obj
+
+    @property
+    def version(self):
+        return self["version"]
+
+    @version.setter
+    def version(self, obj):
+        self["version"] = obj
+
+    @property
+    def storage_type(self):
+        return self["storage_type"]
+
+    @storage_type.setter
+    def storage_type(self, obj):
+        self["storage_type"] = obj
+
+    @property
+    def file_dims(self):
+        return self["file_dims"]
+
+    @file_dims.setter
+    def file_dims(self, obj):
+        self["file_dims"] = obj
+
+    @property
+    def sets(self):
+        return self["sets"]
+
+    @sets.setter
+    def sets(self, obj):
+        self["sets"] = obj
+
     def is_valid(self, raise_exception=True) -> bool:
         """
-        :return:
+        Checks if ``self`` is a valid ``HeaderArrayObj``.
+
+        :param bool raise_exception: If `False`, `True`/`False` will be returned on check success/failure. Otherwise an exception is raised (the default).
+        :return bool:
         """
 
         required_keys = ["array", "long_name", "data_type", "version", "storage_type", "file_dims"]
@@ -115,7 +187,10 @@ class HeaderArrayObj(dict):
         if hao.is_valid():
             return hao
 
-    def array_operation(self, other: "HeaderArrayObj", operation: str, name: str="NEW1", **kwargs):
+    def array_operation(self,
+                        other: "Union[np.ndarray, HeaderArrayObj]",
+                        operation: str,
+                        **kwargs):
         """
         This method is implemented to allow for operations on the arrays of HeaderArrayObjs. Most Tablo-like
         functionality is replicated with this method.
@@ -124,8 +199,21 @@ class HeaderArrayObj(dict):
         :param dict kwargs: Any additional kwargs are passed to the new ``HeaderArrayObj``.
         :return: A new ``HeaderArrayObj`` that results from the operation. Will have a default header name of ``"NEW1"``.
         """
-        new_array = getattr(self["array"], operation)(other["array"])
-        return HeaderArrayObj.HeaderArrayFromData(array=new_array, **kwargs)
+
+
+        if issubclass(type(other), HeaderArrayObj):
+            other = other.array
+        elif issubclass(type(other), (float, int)):
+            other = np.ones_like(self.array)*other
+
+        try:
+            assert(issubclass(type(other), np.ndarray))
+        except AssertionError:
+            msg = "Operation is not permitted for objects that are not of 'numpy.ndarray' type, or 'HeaderArrayObj' type."
+            raise TypeError(msg)
+
+        new_array = getattr(self.array, operation)(other)
+        return HeaderArrayObj.HeaderArrayFromData( array=new_array, **kwargs)
 
     def __add__(self, other):
         return self.array_operation(other, "__add__")
