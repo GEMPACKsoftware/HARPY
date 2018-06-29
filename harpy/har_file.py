@@ -92,7 +92,7 @@ class HarFileObj(object):
         :return: Returns only the names of arrays of type 2D or 7D - i.e. multi-dimensional header arrays of floating point numbers.
         """
 
-        return [key for key,val in self._head_arrs.items() if val["data_type"] in ["RE"]]
+        return [key for key,val in self._head_arrs.items() if val.data_type in ["RE"]]
 
 
     def getHeaderArrayObj(self, ha_name: str):

@@ -7,22 +7,23 @@ Created on Mar 02 11:39:45 2018
 import numpy as np
 
 
-class HeaderArrayObj(dict):
+class HeaderArrayObj(object):
 
     def __init__(self, *args, **kwargs):
+        
         super().__init__(*args, **kwargs)
 
     @property
     def array(self):
-        return self["array"]
+        return self._array
 
     @array.setter
     def array(self, obj):
-        self["array"] = obj
+        self._array = obj
 
     @property
     def coeff_name(self):
-        return self.get("coeff_name", "")
+        return self._coeff_name
 
     @coeff_name.setter
     def coeff_name(self, obj):
@@ -31,55 +32,55 @@ class HeaderArrayObj(dict):
             raise TypeError(msg)
         if len(obj) < 12:
             obj.ljust(12)
-        self["coeff_name"] = obj
+        self._coeff_name = obj
 
     @property
     def long_name(self):
-        return self["long_name"]
+        return self._long_name
 
     @long_name.setter
     def long_name(self, obj):
-        self["long_name"] = obj
+        self._long_name = obj
 
     @property
     def data_type(self):
-        return self["data_type"]
+        return self._data_type
 
     @data_type.setter
     def data_type(self, obj):
-        self["data_type"] = obj
+        self._data_type = obj
 
     @property
     def version(self):
-        return self["version"]
+        return self._version
 
     @version.setter
     def version(self, obj):
-        self["version"] = obj
+        self._version = obj
 
     @property
     def storage_type(self):
-        return self["storage_type"]
+        return self._storage_type
 
     @storage_type.setter
     def storage_type(self, obj):
-        self["storage_type"] = obj
+        self._storage_type = obj
 
     @property
     def file_dims(self):
-        return self["file_dims"]
+        return self._file_dims
 
     @file_dims.setter
     def file_dims(self, obj):
-        self["file_dims"] = obj
+        self._file_dims = obj
 
     @property
     def sets(self):
-        return self["sets"]
+        return self._sets
 
     @sets.setter
     def sets(self, obj):
-        self["sets"] = obj
+        self._sets = obj
 
     def is_valid(self, raise_exception=True) -> bool:
         """
@@ -89,39 +90,30 @@ class HeaderArrayObj(dict):
         :return bool:
         """
 
-        required_keys = ["array", "long_name", "data_type", "version", "storage_type", "file_dims"]
-        key_present = [key in self for key in required_keys]
 
-        if not all(key_present):
-            if raise_exception:
-                idx = key_present.index(False)
-                raise KeyError("'%s' not in HeaderArrayObj." % required_keys[idx])
-            else:
-                return False
-
-        # if (not isinstance(self["name"], str)) or (len(self["name"]) != 4):
+        # if (not isinstance(self._name, str)) or (len(self._name) != 4):
         #     if raise_exception:
         #         raise HeaderArrayObj.InvalidHeaderArrayName(
-        #             "Header array name (%s) must be precisely four (alphanumeric) characters." % self["name"])
+        #             "Header array name (%s) must be precisely four (alphanumeric) characters." % self._name)
         #     else:
         #         return False
 
-        if not isinstance(self["array"], np.ndarray):
+        if not isinstance(self._array, np.ndarray):
             if raise_exception:
                 raise TypeError("HeaderArrayObj 'array' must be of type 'numpy.ndarray'.")
             else:
                 return False
 
-        if (self.get("sets") is not None) and (not isinstance(self["sets"], list)):
+        if (self.sets is not None) and (not isinstance(self._sets, list)):
             raise TypeError("'sets' must be a list or None.")
 
-        if not isinstance(self.get("long_name", ""), str):
+        if not isinstance(self.long_name, str):
             raise TypeError("'long_name' must be of str type.")
 
-        if not isinstance(self.get("coeff_name", ""), str):
+        if not isinstance(self.coeff_name, str):
             raise TypeError("'coeff_name' must be of str type.")
 
-        if not isinstance(self.get("version", 0), int):
+        if not isinstance(self.version, int):
             raise TypeError("'version' must be an integer.")
 
         return True
@@ -130,11 +122,11 @@ class HeaderArrayObj(dict):
         if "sets" not in self:
             raise KeyError("HeaderArrayObj does not have 'sets'.")
 
-        for s in self["sets"]:
+        for s in self._sets:
             if s["name"] == name:
                 return s
         else:
-            raise ValueError("'%s' is not the name of a set in HeaderArrayObj '%s'." % (name, self["name"]))
+            raise ValueError("'%s' is not the name of a set in HeaderArrayObj '%s'." % (name, self._name))
 
 
     @staticmethod
@@ -175,14 +167,14 @@ class HeaderArrayObj(dict):
         if len(long_name) < 70:
             long_name = long_name.ljust(70)
 
-        hao["array"] = array
-        hao["coeff_name"] = coeff_name
-        hao["long_name"] = long_name
-        hao["sets"] = sets
-        hao["version"] = version
-        hao["data_type"] = data_type
-        hao["storage_type"] = storage_type
-        hao["file_dims"] = file_dims
+        hao.array = array
+        hao.coeff_name = coeff_name
+        hao.long_name = long_name
+        hao.sets = sets
+        hao.version = version
+        hao.data_type = data_type
+        hao.storage_type = storage_type
+        hao.file_dims = file_dims
 
         if hao.is_valid():
             return hao

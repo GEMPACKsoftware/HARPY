@@ -52,7 +52,7 @@ class TestHarFileObj(unittest.TestCase):
         hfo = HarFileObj.loadFromDisk("test_overwrite_header.har")  # Must check loadFromDisk passes test to rely on results from this method
 
         hao = hfo.getHeaderArrayObjs(["ARR7"])[0]
-        hao["array"][0,0,0,0,0,0,0] = 42.0
+        hao.array[0,0,0,0,0,0,0] = 42.0
 
         hfo.writeToDisk("test_overwrite_header.har")
 
@@ -63,7 +63,7 @@ class TestHarFileObj(unittest.TestCase):
         self.assertTrue(all([x == y for (x, y) in zip(header_names, test_hn)]))
 
         hao = hfo.getHeaderArrayObjs(["ARR7"])[0]
-        self.assertTrue(np.isclose(hao["array"][0,0,0,0,0,0,0], 42.0))
+        self.assertTrue(np.isclose(hao.array[0,0,0,0,0,0,0], 42.0))
 
         os.remove("test_overwrite_header.har")
 

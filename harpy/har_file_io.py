@@ -676,86 +676,86 @@ class HarFileIO(object):
 
         with fp:
             for hname, head_arr_obj in zip(hnames, head_arr_objs):
-                header_type_str = str(head_arr_obj["array"].dtype)
-                has_sets = "sets" in head_arr_obj
+                header_type_str = str(head_arr_obj.array.dtype)
+                has_sets = not head_arr_obj.sets is None
                 # HarFileIO._writeHeader(fp, head_arr_obj)
-                if 'float32' == header_type_str and (head_arr_obj["array"].ndim != 2 or has_sets):
+                if 'float32' == header_type_str and (head_arr_obj.array.ndim != 2 or has_sets):
                     HarFileIO._writeHeader7D(fp, hname, head_arr_obj)
                 elif 'int32' == header_type_str or 'float32' == header_type_str:
                     HarFileIO._writeHeader2D(fp, hname, head_arr_obj)
                 elif '<U' in header_type_str or '|S' in header_type_str:
-                    if head_arr_obj["array"].ndim > 1:
-                        print('"' + head_arr_obj["name"] + '" can not be written as character arrays ndim>1 are not yet supported')
+                    if head_arr_obj.array.ndim > 1:
+                        print('"' + head_arr_obj.name + '" can not be written as character arrays ndim>1 are not yet supported')
                         return
                     HarFileIO._writeHeader1C(fp, hname, head_arr_obj)
                 else:
                     raise TypeError('Can not write data in Header: "' +
-                                    head_arr_obj["name"] + '" as data style does not match any known Header type')
+                                    head_arr_obj.name + '" as data style does not match any known Header type')
                 fp.flush()
 
     @staticmethod
     def _writeHeader(fp: io.BufferedReader, hname : str, head_arr_obj: header.HeaderArrayObj):
 
-        head_arr_obj["storage_type"] = 'FULL'
+        head_arr_obj.storage_type = 'FULL'
 
-        header_type_str = str(head_arr_obj["array"].dtype)
+        header_type_str = str(head_arr_obj.array.dtype)
         if header_type_str == "float32":
             type_char = 'f'
-            if head_arr_obj["array"].ndim > 2:
-                if (float(np.count_nonzero(head_arr_obj["array"])) / head_arr_obj["array"].size) <= 0.4:
-                    head_arr_obj["storage_type"] = 'SPSE'
+            if head_arr_obj.array.ndim > 2:
+                if (float(np.count_nonzero(head_arr_obj.array)) / head_arr_obj.array.size) <= 0.4:
+                    head_arr_obj.storage_type = 'SPSE'
                 max_dim = 7
                 if "sets" in head_arr_obj:
-                    head_arr_obj["data_type"] = "RE"
+                    head_arr_obj.data_type = "RE"
                 else:
-                    head_arr_obj["data_type"] = "RL"
-            elif head_arr_obj["array"].ndim == 2:
+                    head_arr_obj.data_type = "RL"
+            elif head_arr_obj.array.ndim == 2:
                 max_dim = 2
-                head_arr_obj["data_type"] = "2R"
+                head_arr_obj.data_type = "2R"
         elif header_type_str == "int32":
             type_char = 'i'
             max_dim = 2
-            head_arr_obj["data_type"] = "2I"
+            head_arr_obj.data_type = "2I"
         elif '<U' in header_type_str or '|S' in header_type_str:
-            if head_arr_obj["array"].ndim > 1:
-                raise ValueError("'%s' can not be written as character arrays with more than 1 dimension are not yet supported." % head_arr_obj["name"])
+            if head_arr_obj.array.ndim > 1:
+                raise ValueError("'%s' can not be written as character arrays with more than 1 dimension are not yet supported." % head_arr_obj.name)
             max_dim = 2 # Yes, seems a bit counter-intuitive I know
-            head_arr_obj["data_type"] = "1C"
+            head_arr_obj.data_type = "1C"
         else:
-            raise TypeError("Can not write data in '%s' as array does not match any known type." % head_arr_obj["name"])
+            raise TypeError("Can not write data in '%s' as array does not match any known type." % head_arr_obj.name)
 
-        secRecList = ['    ', head_arr_obj["data_type"], head_arr_obj["storage_type"], head_arr_obj["long_name"], max_dim]
-        ext = [head_arr_obj["array"].shape[i] if i < head_arr_obj["array"].ndim else 1 for i in range(max_dim)]
-        if head_arr_obj["data_type"] == "1C":
-            ext = [head_arr_obj["array"].size, int(header_type_str[2:])]
+        secRecList = ['    ', head_arr_obj.data_type, head_arr_obj.storage_type, head_arr_obj.long_name, max_dim]
+        ext = [head_arr_obj.array.shape[i] if i < head_arr_obj.array.ndim else 1 for i in range(max_dim)]
+        if head_arr_obj.data_type == "1C":
+            ext = [head_arr_obj.array.size, int(header_type_str[2:])]
         secRecList = secRecList + ext
 
-        HarFileIO._writeHeaderName(fp, head_arr_obj["name"])
+        HarFileIO._writeHeaderName(fp, head_arr_obj.name)
         HarFileIO._writeSecondRecord(fp, secRecList)
 
-        if head_arr_obj["data_type"] in ["RE", "RL"]:
-            if head_arr_obj["storage_type"] == 'FULL':
-                HarFileIO._write7DFullArray(fp, hname, np.asfortranarray(head_arr_obj["array"]), type_char)
+        if head_arr_obj.data_type in ["RE", "RL"]:
+            if head_arr_obj.storage_type == 'FULL':
+                HarFileIO._write7DFullArray(fp, hname, np.asfortranarray(head_arr_obj.array), type_char)
             else:
-                HarFileIO._write7DSparseArray(fp, hname,  np.asfortranarray(head_arr_obj["array"]), type_char)
-        elif head_arr_obj["data_type"] in ["2I", "2R"]:
-            HarFileIO._write2DArray(fp, hname, np.asfortranarray(head_arr_obj["array"]), type_char)
-        elif head_arr_obj["data_type"] in ["1C"]:
-            HarFileIO._write1CArray(fp, hname, np.asfortranarray(head_arr_obj["array"]), head_arr_obj["array"].size, int(header_type_str[2:]))
+                HarFileIO._write7DSparseArray(fp, hname,  np.asfortranarray(head_arr_obj.array), type_char)
+        elif head_arr_obj.data_type in ["2I", "2R"]:
+            HarFileIO._write2DArray(fp, hname, np.asfortranarray(head_arr_obj.array), type_char)
+        elif head_arr_obj.data_type in ["1C"]:
+            HarFileIO._write1CArray(fp, hname, np.asfortranarray(head_arr_obj.array), head_arr_obj.array.size, int(header_type_str[2:]))
         else:
             raise ValueError("Unknown 'data_type' for this HeaderArrayObj.")
 
     @staticmethod
     def _writeHeader7D(fp: io.BufferedReader, hname : str, head_arr_obj: header.HeaderArrayObj):
-        hasElements = isinstance(head_arr_obj["sets"], list)
-        dataFill = float(np.count_nonzero(head_arr_obj["array"])) / head_arr_obj["array"].size
+        hasElements = isinstance(head_arr_obj.sets, list)
+        dataFill = float(np.count_nonzero(head_arr_obj.array)) / head_arr_obj.array.size
 
         if dataFill > 0.4:
-            head_arr_obj["storage_type"] = 'FULL'
+            head_arr_obj.storage_type = 'FULL'
         else:
-            head_arr_obj["storage_type"] = 'SPSE'
+            head_arr_obj.storage_type = 'SPSE'
 
-        shape7D = [head_arr_obj["array"].shape[i] if i < head_arr_obj["array"].ndim else 1 for i in range(0, 7)]
+        shape7D = [head_arr_obj.array.shape[i] if i < head_arr_obj.array.ndim else 1 for i in range(0, 7)]
 
         HarFileIO._writeHeaderName(fp, hname)
         if hasElements:
@@ -763,42 +763,42 @@ class HarFileIO(object):
         else:
             HeaderType = 'RL'
 
-        secRecList = ['    ', HeaderType, head_arr_obj["storage_type"], head_arr_obj["long_name"], 7]
+        secRecList = ['    ', HeaderType, head_arr_obj.storage_type, head_arr_obj.long_name, 7]
         secRecList.extend(shape7D)
         HarFileIO._writeSecondRecord(fp, secRecList)
         if hasElements:
             HarFileIO._writeSetElInfo(fp, head_arr_obj)
 
-        if head_arr_obj["storage_type"] == 'FULL':
-            HarFileIO._write7DFullArray(fp, np.asfortranarray(head_arr_obj["array"]), 'f')
+        if head_arr_obj.storage_type == 'FULL':
+            HarFileIO._write7DFullArray(fp, np.asfortranarray(head_arr_obj.array), 'f')
         else:
-            HarFileIO._write7DSparseArray(fp, np.asfortranarray(head_arr_obj["array"]), 'f')
+            HarFileIO._write7DSparseArray(fp, np.asfortranarray(head_arr_obj.array), 'f')
 
     @staticmethod
     def _writeHeader2D(fp: io.BufferedReader, hname : str, head_arr_obj: header.HeaderArrayObj):
         HarFileIO._writeHeaderName(fp, hname)
-        typeString = str(head_arr_obj["array"].dtype)
-        shape2D = [head_arr_obj["array"].shape[i] if i < head_arr_obj["array"].ndim else 1 for i in range(0, 2)]
+        typeString = str(head_arr_obj.array.dtype)
+        shape2D = [head_arr_obj.array.shape[i] if i < head_arr_obj.array.ndim else 1 for i in range(0, 2)]
         if typeString == 'int32':
             dtype = 'i'
-            secRecList = ['    ', '2I', 'FULL', head_arr_obj["long_name"], 2]
+            secRecList = ['    ', '2I', 'FULL', head_arr_obj.long_name, 2]
         elif typeString == 'float32':
-            secRecList = ['    ', '2R', 'FULL', head_arr_obj["long_name"], 2]
+            secRecList = ['    ', '2R', 'FULL', head_arr_obj.long_name, 2]
             dtype = 'f'
         secRecList.extend(shape2D)
 
         HarFileIO._writeSecondRecord(fp, secRecList)
-        HarFileIO._write2DArray(fp, np.asfortranarray(head_arr_obj["array"]), dtype)
+        HarFileIO._write2DArray(fp, np.asfortranarray(head_arr_obj.array), dtype)
 
     @staticmethod
     def _writeHeader1C(fp: io.BufferedReader, hname : str, head_arr_obj: header.HeaderArrayObj):
 
         HarFileIO._writeHeaderName(fp, hname)
-        typeString = str(head_arr_obj["array"].dtype)
+        typeString = str(head_arr_obj.array.dtype)
         no_chars = int(typeString[2:])
-        secRecList = ['    ', '1C', 'FULL', head_arr_obj["long_name"], 2, head_arr_obj["array"].size, no_chars]
+        secRecList = ['    ', '1C', 'FULL', head_arr_obj.long_name, 2, head_arr_obj.array.size, no_chars]
         HarFileIO._writeSecondRecord(fp, secRecList)
-        HarFileIO._write1CArray(fp, np.asfortranarray(head_arr_obj["array"]), head_arr_obj["array"].size, no_chars)
+        HarFileIO._write1CArray(fp, np.asfortranarray(head_arr_obj.array), head_arr_obj.array.size, no_chars)
 
     @staticmethod
     def _writeHeaderName(fp: io.BufferedReader, name: str):
@@ -969,11 +969,11 @@ class HarFileIO(object):
                         # CName,
                         header_arr_obj: header.HeaderArrayObj):
 
-        sets = [set.name for set in header_arr_obj["sets"]]
-        indexTypes = [set.dim_type for set in header_arr_obj["sets"]]
-        Elements = [set.dim_desc for set in header_arr_obj["sets"]]
+        sets = [set.name for set in header_arr_obj.sets]
+        indexTypes = [set.dim_type for set in header_arr_obj.sets]
+        Elements = [set.dim_desc for set in header_arr_obj.sets]
 
-        CName = header_arr_obj["coeff_name"]
+        CName = header_arr_obj.coeff_name
         tmp = {}
         elList = []
         if not sets:

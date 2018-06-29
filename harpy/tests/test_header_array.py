@@ -56,19 +56,19 @@ class TestHeaderArray(unittest.TestCase):
 
         hao3 = hao1 + hao2
 
-        self.assertTrue(np.allclose(hao3["array"], array_2d*2))
+        self.assertTrue(np.allclose(hao3.array, array_2d*2))
 
         hao3 = hao1 - hao2
 
-        self.assertTrue(np.allclose(hao3["array"], np.array([[0, 0], [0, 0]])))
+        self.assertTrue(np.allclose(hao3.array, np.array([[0, 0], [0, 0]])))
 
         hao3 = hao1 * hao2
 
-        self.assertTrue(np.allclose(hao3["array"], np.array([[1, 4], [9, 16]])))
+        self.assertTrue(np.allclose(hao3.array, np.array([[1, 4], [9, 16]])))
 
         hao3 = hao1 / hao2
 
-        self.assertTrue(np.allclose(hao3["array"], np.array([[1, 1], [1, 1]])))
+        self.assertTrue(np.allclose(hao3.array, np.array([[1, 1], [1, 1]])))
 
     def test_array_operation_ndarray(self):
 
@@ -78,19 +78,19 @@ class TestHeaderArray(unittest.TestCase):
 
         hao3 = hao1 + array_2d
 
-        self.assertTrue(np.allclose(hao3["array"], array_2d*2))
+        self.assertTrue(np.allclose(hao3.array, array_2d*2))
 
         hao3 = hao1 - array_2d
 
-        self.assertTrue(np.allclose(hao3["array"], np.array([[0, 0], [0, 0]])))
+        self.assertTrue(np.allclose(hao3.array, np.array([[0, 0], [0, 0]])))
 
         hao3 = hao1 * array_2d
 
-        self.assertTrue(np.allclose(hao3["array"], np.array([[1, 4], [9, 16]])))
+        self.assertTrue(np.allclose(hao3.array, np.array([[1, 4], [9, 16]])))
 
         hao3 = hao1 / array_2d
 
-        self.assertTrue(np.allclose(hao3["array"], np.array([[1, 1], [1, 1]])))
+        self.assertTrue(np.allclose(hao3.array, np.array([[1, 1], [1, 1]])))
 
     def test_array_operation_int(self):
 
@@ -100,19 +100,19 @@ class TestHeaderArray(unittest.TestCase):
 
         hao3 = hao1 + 2
 
-        self.assertTrue(np.allclose(hao3["array"], array_2d + 2))
+        self.assertTrue(np.allclose(hao3.array, array_2d + 2))
 
         hao3 = hao1 - 1
 
-        self.assertTrue(np.allclose(hao3["array"], array_2d - 1))
+        self.assertTrue(np.allclose(hao3.array, array_2d - 1))
 
         hao3 = hao1 * 3
 
-        self.assertTrue(np.allclose(hao3["array"], array_2d * 3))
+        self.assertTrue(np.allclose(hao3.array, array_2d * 3))
 
         hao3 = hao1 / 2
 
-        self.assertTrue(np.allclose(hao3["array"], array_2d / 2))
+        self.assertTrue(np.allclose(hao3.array, array_2d / 2))
 
     def test_array_operation_float(self):
 
@@ -122,19 +122,19 @@ class TestHeaderArray(unittest.TestCase):
 
         hao3 = hao1 + 1.5
 
-        self.assertTrue(np.allclose(hao3["array"], array_2d + 1.5))
+        self.assertTrue(np.allclose(hao3.array, array_2d + 1.5))
 
         hao3 = hao1 - 0.5
 
-        self.assertTrue(np.allclose(hao3["array"], array_2d - 0.5))
+        self.assertTrue(np.allclose(hao3.array, array_2d - 0.5))
 
         hao3 = hao1 * 3.14
 
-        self.assertTrue(np.allclose(hao3["array"], array_2d * 3.14))
+        self.assertTrue(np.allclose(hao3.array, array_2d * 3.14))
 
         hao3 = hao1 / -2.5
 
-        self.assertTrue(np.allclose(hao3["array"], array_2d / -2.5))
+        self.assertTrue(np.allclose(hao3.array, array_2d / -2.5))
 
     def test_attributes_style(self):
         """Note that the values set by the setter methods are NOT guaranteed to be consistent or legitimate. Implementation of further checks with the attribute-style referencing may cause this test to fail."""
