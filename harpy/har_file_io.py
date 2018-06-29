@@ -14,6 +14,7 @@ import math
 import numpy as np
 
 import harpy.header_array as header
+from harpy._header_sets import _HeaderSet
 
 # compatibility function for python 2.7/3.x
 if sys.version_info < (3,):
@@ -608,12 +609,13 @@ class HarFileIO(object):
                 if name not in processedSet:
                     processedSet[name] = HarFileIO._readCharVec(fp, itemsize=12, as_unicode=as_unicode, size=tuple([file_dims[idim]]),
                                     dtype="<U12")
-                header_sets.append({"name": name, "status": status, "dim_type": "Set",
-                                    "dim_desc": [item.strip() for item in processedSet[name]]})
+                header_sets.append(_HeaderSet(name=name, status=status,
+                                              dim_type="Set",
+                                   dim_desc=[item.strip() for item in processedSet[name]]))
             elif status == 'u':
-                header_sets.append({"name": name, "status": status, "dim_type": "Num", "dim_desc": None})
+                header_sets.append(_HeaderSet(name=name, status=status, dim_type="Num", dim_desc=None))
             elif status == 'e':
-                header_sets.append({"name": name, "status": status, "dim_type": "El", "dim_desc": ElementList.pop(0)})
+                header_sets.append(_HeaderSet(name=name, status=status, dim_type="El", dim_desc=ElementList.pop(0)))
             idim += 1
 
         return Coefficient, header_sets
@@ -975,9 +977,11 @@ class HarFileIO(object):
                         # Elements,
                         # CName,
                         header_arr_obj: header.HeaderArrayObj):
-        sets = [set["name"] for set in header_arr_obj["sets"]]
-        indexTypes = [set["dim_type"] for set in header_arr_obj["sets"]]
-        Elements = [set["dim_desc"] for set in header_arr_obj["sets"]]
+
+        sets = [set.name for set in header_arr_obj["sets"]]
+        indexTypes = [set.dim_type for set in header_arr_obj["sets"]]
+        Elements = [set.dim_desc for set in header_arr_obj["sets"]]
+
         CName = header_arr_obj["coeff_name"]
         tmp = {}
         elList = []
