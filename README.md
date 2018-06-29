@@ -3,7 +3,7 @@ This project provides a python package to read and write HAR files produced by G
 
 ## NEW - Harpy is available on pip!
 
-Harpy can now be installed using pip:
+Harpy can now be installed using pip (for python 3):
 
 ```
     pip install harpy3

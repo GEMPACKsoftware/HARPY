@@ -71,6 +71,32 @@ class TestHeaderArray(unittest.TestCase):
 
         self.assertTrue(np.allclose(hao3["array"], np.array([[1, 1], [1, 1]])))
 
+    def test_attributes_style(self):
+        """Note that the values set by the setter methods are NOT guaranteed to be consistent or legitimate. Implementation of further checks with the attribute-style referencing may cause this test to fail."""
+
+        hao = HeaderArrayObj()
+
+        # Test setters
+        hao.name = "ABC"
+        hao.coeff_name = "ABCDEF"
+        hao.long_name = "A test header array object."
+        hao.array = np.array([[1.0, 2.0], [3.0, 4.0]])
+        hao.data_type = "2R"
+        hao.version = 1
+        hao.storage_type = "SPSE"
+        hao.file_dims = 2
+        hao.sets = ["A"]
+
+        # Test getters
+        self.assertEqual(hao.name, "ABC")
+        self.assertEqual(hao.coeff_name, "ABCDEF")
+        self.assertEqual(hao.long_name, "A test header array object.")
+        self.assertTrue(np.allclose(hao.array, np.array([[1.0, 2.0], [3.0, 4.0]])))
+        self.assertEqual(hao.data_type, "2R")
+        self.assertEqual(hao.version, 1)
+        self.assertEqual(hao.storage_type, "SPSE")
+        self.assertEqual(hao.file_dims, 2)
+        self.assertEqual(hao.sets, ["A"])
 
 
 if __name__ == "__main__":

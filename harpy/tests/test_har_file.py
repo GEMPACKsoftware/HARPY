@@ -8,7 +8,6 @@ Created on Mar 12 09:54:30 2018
 import os
 import unittest
 import shutil
-import sys
 
 import numpy as np
 
@@ -99,6 +98,25 @@ class TestHarFileObj(unittest.TestCase):
         self.assertTrue(all([x == y for (x, y) in zip(hn, test_hn)]))
 
         os.remove("test_get_real_headerarrays.har")
+
+    def test_attributes_style(self):
+
+        hfo = HarFileObj.loadFromDisk(TestHarFileObj._dd + "test.har")
+        haos = hfo.getHeaderArrayObjs()
+
+        # Test getter method
+        self.assertTrue(hfo.head_arrs == hfo.getHeaderArrayObjs())
+
+        # Test setter method
+        hfo.head_arrs = hfo.getHeaderArrayObjs()
+        self.assertTrue(hfo.head_arrs == hfo.getHeaderArrayObjs())
+
+        # Test incorrect type
+        with self.assertRaises(TypeError):
+            hfo.head_arrs = {}
+
+        with self.assertRaises(TypeError):
+            hfo.head_arrs = ["a"]
 
 if __name__ == "__main__":
     unittest.main()

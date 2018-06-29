@@ -12,9 +12,84 @@ class HeaderArrayObj(dict):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    @property
+    def array(self):
+        return self["array"]
+
+    @array.setter
+    def array(self, obj):
+        self["array"] = obj
+
+    @property
+    def name(self):
+        return self["name"]
+
+    @name.setter
+    def name(self, obj):
+        self["name"] = obj
+
+    @property
+    def coeff_name(self):
+        return self["coeff_name"]
+
+    @coeff_name.setter
+    def coeff_name(self, obj):
+        self["coeff_name"] = obj
+
+    @property
+    def long_name(self):
+        return self["long_name"]
+
+    @long_name.setter
+    def long_name(self, obj):
+        self["long_name"] = obj
+
+    @property
+    def data_type(self):
+        return self["data_type"]
+
+    @data_type.setter
+    def data_type(self, obj):
+        self["data_type"] = obj
+
+    @property
+    def version(self):
+        return self["version"]
+
+    @version.setter
+    def version(self, obj):
+        self["version"] = obj
+
+    @property
+    def storage_type(self):
+        return self["storage_type"]
+
+    @storage_type.setter
+    def storage_type(self, obj):
+        self["storage_type"] = obj
+
+    @property
+    def file_dims(self):
+        return self["file_dims"]
+
+    @file_dims.setter
+    def file_dims(self, obj):
+        self["file_dims"] = obj
+
+    @property
+    def sets(self):
+        return self["sets"]
+
+    @sets.setter
+    def sets(self, obj):
+        self["sets"] = obj
+
     def is_valid(self, raise_exception=True) -> bool:
         """
-        :return:
+        Checks if ``self`` is a valid ``HeaderArrayObj``.
+
+        :param bool raise_exception: If `False`, `True`/`False` will be returned on check success/failure. Otherwise an exception is raised (the default).
+        :return bool:
         """
 
         required_keys = ["array", "name", "long_name", "data_type", "version", "storage_type", "file_dims"]

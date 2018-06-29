@@ -16,6 +16,14 @@ class HarFileObj(dict):
     HAR file object - essentially a memory representation of a HAR file.
 
     ``HarFileObj`` subclasses `dict`, and stores a `list` of ``harpy.HeaderArrayObj`` in ``self``. Each ``harpy.HeaderArrayObj`` corresponds to a header-array. If ``HarFileObj`` is provided with ``filename``, then the header-arrays in that file will be loaded - i.e. each ``harpy.HeaderArrayObj``  in ``self`` will correspond to a header-array in that file.
+
+    Every key in a ``HarFileObj`` can be get and set as an attribute.
+
+    The complete list of attributes is:
+
+    :param list head_arrs: Returned/provided as a `list` of ``HeaderArrayObj`` defining all ``HeaderArrayObj`` associated with a file.
+
+    And the methods of ``HarFileObj`` are:
     """
 
     def __init__(self, *args, filename: str=None, **kwargs):
@@ -26,6 +34,27 @@ class HarFileObj(dict):
         if isinstance(filename, str):
             self = HarFileObj.loadFromDisk(filename)
 
+    @property
+    def head_arrs(self):
+        return self["head_arrs"]
+
+    @head_arrs.setter
+    def head_arrs(self, obj: list):
+        try:
+            assert(issubclass(type(obj), list))
+        except AssertionError:
+            msg = "Must provide list-like object to attribute 'head_arrs', not '%s'." % type(obj)
+            raise TypeError(msg)
+
+        correct_type = [issubclass(type(i), HeaderArrayObj) for i in obj]
+        try:
+            assert(all(correct_type))
+        except AssertionError:
+            idx = correct_type.index(False)
+            msg = "All items of obj must be of 'HeaderArrayObj' type - item %d is of type %s." % (idx, type(obj[idx]))
+            raise TypeError(msg)
+
+        self["head_arrs"] = obj
 
     def getHeaderArrayNames(self):
         """
