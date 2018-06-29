@@ -102,7 +102,6 @@ class TestHarFileObj(unittest.TestCase):
     def test_attributes_style(self):
 
         hfo = HarFileObj.loadFromDisk(TestHarFileObj._dd + "test.har")
-        haos = hfo.getHeaderArrayObjs()
 
         # Test getter method
         self.assertTrue(hfo.head_arrs == hfo.getHeaderArrayObjs())

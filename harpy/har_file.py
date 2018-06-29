@@ -179,15 +179,15 @@ class HarFileObj(dict):
 
 
     @staticmethod
-    def loadFromDisk(filename: str) -> 'HarFileObj':
-        """
-        Loads a HAR file into memory, returning a HarFileObj.
+    def loadFromDisk(filename: str, ha_names: list = None) -> 'HarFileObj':
+        """Loads a HAR file into memory, returning a HarFileObj.
 
         :param filename: The name of the file to load.
-        :return:
+        :param ha_names: If provided, only reads headers with the names matching the strings contained in this list. By default, all header arrays are read.
+        :return "HarFileObj": Returns ``HarFileObj`` with
         """
 
         hfo = HarFileObj()
-        hfo.readHeaderArrayObjs(filename=filename)
+        hfo.readHeaderArrayObjs(filename=filename, ha_names=ha_names)
 
         return hfo
