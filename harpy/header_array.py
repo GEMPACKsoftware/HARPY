@@ -21,14 +21,6 @@ class HeaderArrayObj(dict):
         self["array"] = obj
 
     @property
-    def name(self):
-        return self["name"]
-
-    @name.setter
-    def name(self, obj):
-        self["name"] = obj
-
-    @property
     def coeff_name(self):
         return self.get("coeff_name", "")
 
@@ -97,7 +89,7 @@ class HeaderArrayObj(dict):
         :return bool:
         """
 
-        required_keys = ["array", "name", "long_name", "data_type", "version", "storage_type", "file_dims"]
+        required_keys = ["array", "long_name", "data_type", "version", "storage_type", "file_dims"]
         key_present = [key in self for key in required_keys]
 
         if not all(key_present):
@@ -107,12 +99,12 @@ class HeaderArrayObj(dict):
             else:
                 return False
 
-        if (not isinstance(self["name"], str)) or (len(self["name"]) != 4):
-            if raise_exception:
-                raise HeaderArrayObj.InvalidHeaderArrayName(
-                    "Header array name (%s) must be precisely four (alphanumeric) characters." % self["name"])
-            else:
-                return False
+        # if (not isinstance(self["name"], str)) or (len(self["name"]) != 4):
+        #     if raise_exception:
+        #         raise HeaderArrayObj.InvalidHeaderArrayName(
+        #             "Header array name (%s) must be precisely four (alphanumeric) characters." % self["name"])
+        #     else:
+        #         return False
 
         if not isinstance(self["array"], np.ndarray):
             if raise_exception:
@@ -146,7 +138,7 @@ class HeaderArrayObj(dict):
 
 
     @staticmethod
-    def HeaderArrayFromData(name: str, array: np.ndarray, coeff_name: str=None, long_name: str=None,
+    def HeaderArrayFromData(array: np.ndarray, coeff_name: str=None, long_name: str=None,
                             version: int=1, storage_type=None, file_dims=None, data_type=None,
                             sets: 'Union[None, List[dict]]'=None):
         """
@@ -174,19 +166,15 @@ class HeaderArrayObj(dict):
 
         # Defaults handling
         if coeff_name is None:
-            coeff_name = name
+            coeff_name = " "*12
         if long_name is None:
             long_name = coeff_name
 
-        # String padding if necessary
-        if len(name) < 4:
-            name = name.ljust(4)
         if len(coeff_name) < 12:
             coeff_name = coeff_name.ljust(12)
         if len(long_name) < 70:
             long_name = long_name.ljust(70)
 
-        hao["name"] = name
         hao["array"] = array
         hao["coeff_name"] = coeff_name
         hao["long_name"] = long_name
@@ -202,7 +190,7 @@ class HeaderArrayObj(dict):
     def array_operation(self,
                         other: "Union[np.ndarray, HeaderArrayObj]",
                         operation: str,
-                        name: str="NEW1", **kwargs):
+                        **kwargs):
         """
         This method is implemented to allow for operations on the arrays of HeaderArrayObjs. Most Tablo-like
         functionality is replicated with this method.
@@ -211,6 +199,7 @@ class HeaderArrayObj(dict):
         :param dict kwargs: Any additional kwargs are passed to the new ``HeaderArrayObj``.
         :return: A new ``HeaderArrayObj`` that results from the operation. Will have a default header name of ``"NEW1"``.
         """
+
 
         if issubclass(type(other), HeaderArrayObj):
             other = other.array
@@ -224,7 +213,7 @@ class HeaderArrayObj(dict):
             raise TypeError(msg)
 
         new_array = getattr(self.array, operation)(other)
-        return HeaderArrayObj.HeaderArrayFromData(name=name, array=new_array, **kwargs)
+        return HeaderArrayObj.HeaderArrayFromData( array=new_array, **kwargs)
 
     def __add__(self, other):
         return self.array_operation(other, "__add__")
@@ -250,9 +239,6 @@ class HeaderArrayObj(dict):
     def __sub__(self, other):
         return self.array_operation(other, "__sub__")
 
-    class InvalidHeaderArrayName(ValueError):
-        """Raised if header array name is not exactly four (alphanumeric) characters long."""
-        pass
 
     class UnsupportedArrayType(TypeError):
         """Raised if invalid array type passed."""

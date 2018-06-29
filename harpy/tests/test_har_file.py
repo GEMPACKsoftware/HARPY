@@ -78,7 +78,10 @@ class TestHarFileObj(unittest.TestCase):
 
         self.assertTrue(all([x == y for (x, y) in zip(hn, test_hn)]))
 
-        hfo.addHeaderArrayObjs(hao)
+        hfo.addHeaderArrayObjs("INTA", hao)
+
+        with self.assertRaises(HarFileObj.InvalidHeaderArrayName):
+            hfo.addHeaderArrayObjs("TOO LONG NAME", hao)
 
         hn = hfo.getHeaderArrayNames()
         test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'SIMP', 'SIM2', 'NH01', 'ARR7', 'INTA']
@@ -99,23 +102,71 @@ class TestHarFileObj(unittest.TestCase):
 
         os.remove("test_get_real_headerarrays.har")
 
-    def test_attributes_style(self):
+    def test_get_item(self):
 
         hfo = HarFileObj.loadFromDisk(TestHarFileObj._dd + "test.har")
+        test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'INTA', 'SIMP', 'SIM2', 'NH01', 'ARR7']
 
-        # Test getter method
-        self.assertTrue(hfo.head_arrs == hfo.getHeaderArrayObjs())
+        # Test __getitem __
+        XXCDHead=hfo["XXCD"]
+        self.assertTrue(isinstance(XXCDHead,HeaderArrayObj))
 
-        # Test setter method
-        hfo.head_arrs = hfo.getHeaderArrayObjs()
-        self.assertTrue(hfo.head_arrs == hfo.getHeaderArrayObjs())
+        # Test case insensitive
+        xxcdHead=hfo["xxcd"]
+        self.assertTrue(xxcdHead==XXCDHead)
 
-        # Test incorrect type
+        # Test List get
+        HeadList=hfo[test_hn]
+        for i,id in enumerate(test_hn):
+            self.assertTrue(hfo[id] == HeadList[i])
+
+        # Test bad request
+        with self.assertRaises(ValueError):
+            HeadList = hfo["NOTH"]
         with self.assertRaises(TypeError):
-            hfo.head_arrs = {}
+            HeadList = hfo[1]
+
+    def test_del_and_contains(self):
+        hfo = HarFileObj.loadFromDisk(TestHarFileObj._dd + "test.har")
+        test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'INTA', 'SIMP', 'SIM2', 'NH01', 'ARR7']
+
+        #test contains + case insensitivity
+        self.assertFalse("HNOT" in hfo)
+        self.assertTrue( "XXCD" in hfo)
+        self.assertTrue("xxcd" in hfo)
+
+        #delete single item
+        del hfo["XXCD"]
+        self.assertFalse("XXCD" in hfo)
+
+        del hfo["xxcr"]
+        self.assertFalse("XXCR" in hfo)
+
+        #test delete list
+        del_hn = ['XXCP', 'XXHS', 'CHST', 'INTA', 'SIMP', 'SIM2', 'NH01', 'ARR7']
+        del hfo[del_hn]
+        self.assertFalse(any([ name in hfo for name in del_hn ]))
+
+    def test_set_item(self):
+        hfo = HarFileObj.loadFromDisk(TestHarFileObj._dd + "test.har")
+        test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'INTA', 'SIMP', 'SIM2', 'NH01', 'ARR7']
+
+        xxcdHead = hfo["xxcd"]
+        #set item + case insensitivity
+        hfo["xxc1"]=xxcdHead
+        self.assertTrue("XXC1" in hfo)
+
+        # set item with lists
+        hfo[["xxc2","xxc3"]]=[xxcdHead]*2
+        self.assertTrue(all(name in hfo for name in ["XXC2","XXC3"]))
+
+        with self.assertRaises(HarFileObj.InvalidHeaderArrayName):
+            hfo["TOO LONG NAME"] = xxcdHead
 
         with self.assertRaises(TypeError):
-            hfo.head_arrs = ["a"]
+            hfo[1] = xxcdHead
+
+
 
 if __name__ == "__main__":
     unittest.main()

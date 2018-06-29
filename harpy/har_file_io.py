@@ -40,9 +40,9 @@ else:
         if not x: return x
         return x.decode('utf-8')
 
-class HarFileInfoObj(dict):
+class HarFileInfoObj(object):
 
-    def __init__(self, *args, file: str=None, ha_infos: 'List[dict]'=None, **kwargs):
+    def __init__(self, file: str=None, ha_infos: 'List[dict]'=None):
         """
         :param str file: The absolute path to the file.
         :param str head_arrs: A `list` of `dict`. Each `dict` object itself \
@@ -51,14 +51,24 @@ class HarFileInfoObj(dict):
             :param "pos_name": maps to an `int` that gives the byte-position of the header data.
             :param "pos_data": maps to an `int` that gives the byte-position of the array data.
         """
-        super().__init__(*args, **kwargs)
-        self["file"] = os.path.abspath(file)
+        self.filename = os.path.abspath(file)
+        if os.path.isfile(self.filename):
+            self._mtime = os.path.getmtime(self.filename)
         if ha_infos is None:
-            self["ha_infos"] = []
+            self._ha_infos = OrderedDict()
+
+
+    def addHAInfo(self, name, pos_name, pos_data):
+        name=name.strip().upper()
+        self._ha_infos[name] = HarFileInfoObj._HAInfo(name, pos_name, pos_data, parent_har_file=self)
+
+
+    def getHeaderArrayNames(self):
+        return self._ha_infos.keys()
 
     @property
     def file(self):
-        return self["file"]
+        return self._file
 
     @file.setter
     def file(self, obj):
@@ -67,50 +77,27 @@ class HarFileInfoObj(dict):
         except AssertionError:
             msg = "'obj' is not a subclass of 'str' ('obj' is of type %s)." % type(obj)
             raise TypeError(msg)
-        self["file"] = obj
+        self.filename = obj
 
     @property
     def ha_infos(self):
-        return self["ha_infos"]
+        return self._ha_infos
 
     @ha_infos.setter
     def ha_infos(self, obj):
-        self["ha_infos"] = obj
-
-    def addHAInfo(self, name, pos_name, pos_data):
-        self["ha_infos"].append(HarFileInfoObj._HAInfo(name, pos_name, pos_data, parent_har_file=self))
-
-    def is_valid(self, raise_exception=True):
-        """Checks if ``self`` is a valid ``HarFileInfoObj``."""
-        req_keys = ["file", "ha_infos"]
-        req_keys_present = [key in self for key in req_keys]
-
-        if not all(req_keys_present):
-            if raise_exception:
-                raise KeyError("Key '%s' not present in HarFileInfoObj." % req_keys[req_keys_present.index(False)])
-            else:
-                return False
-
-        # TODO: Perform checks on "file" and "ha_infos" types
-
-        return True
-
-    def getHeaderArrayNames(self):
-        return [ha_info.name for ha_info in self["ha_infos"]]
+        self._ha_infos = obj
 
     def getHeaderArrayInfo(self, ha_name: str):
-        idx = self._getHeaderArrayInfoIdx(ha_name)
-        return self["ha_infos"][idx]
+        if not ha_name.strip().upper() in self._ha_infos:
+            raise ValueError("'%s' does not exist in har file '%s'." % (ha_name, self.filename))
+        return self._ha_infos[ha_name.strip().upper()]
 
-    def _getHeaderArrayInfoIdx(self, ha_name: str):
+    def is_valid(self):
+        valid=os.path.isfile(self.filename)
+        if valid:
+            valid= self._mtime == os.path.getmtime(self.filename)
+        return valid
 
-        self.is_valid()
-
-        for idx, hai in enumerate(self["ha_infos"]):
-            if hai.name == ha_name:
-                return idx
-        else:
-            raise ValueError("'%s' does not exist in har file '%s'." % (ha_name, self["file"]))
 
     class _HAInfo(object):
         """HAInfo is for Header-Array specific information. Any header array written to disk must exist in a HarFile, hence the nesting of ``_HAInfo`` within ``HarFileInfoObj``."""
@@ -121,6 +108,13 @@ class HarFileInfoObj(dict):
             self.pos_name = pos_name
             self.pos_data = pos_data
             self.parent_har_file = parent_har_file
+            self.version = 0
+            self.data_type = None
+            self.storage_type = None
+            self.long_name = None
+            self.file_dims = None
+            self.sets      = None
+            self.coeff_name = None
 
         @property
         def sets(self):
@@ -145,7 +139,6 @@ class HarFileIO(object):
         """
 
         self._HeaderPos = OrderedDict()
-        self.readHeaderNames(filename)
 
     @staticmethod
     def readHarFileInfo(filename: str) -> 'HarFileInfoObj':
@@ -165,7 +158,6 @@ class HarFileIO(object):
                     break
                 hfi.addHAInfo(name, pos, end_pos)
 
-        hfi.is_valid()
         return hfi
 
     @staticmethod
@@ -195,7 +187,7 @@ class HarFileIO(object):
         return Hpos, fb(data), fp.tell()
 
     @staticmethod
-    def readHeaderArraysFromFile(filename: str, ha_names: 'Union[None, str, List[str]]' = None):
+    def readHeaderArraysFromFile(filename: str, ha_names: 'Union[None, str, List[str]]' = None, readData=False):
 
         hfi = HarFileIO.readHarFileInfo(filename)
 
@@ -206,10 +198,10 @@ class HarFileIO(object):
 
         haos = []
 
-        for ha_name in ha_names:
+        for ha_name in ha_names or readData:
             haos.append(HarFileIO.readHeader(hfi=hfi, header_name=ha_name))
 
-        return haos
+        return ha_names, haos
 
 
     @staticmethod
@@ -224,7 +216,7 @@ class HarFileIO(object):
         hfi.is_valid()
         ha_info = hfi.getHeaderArrayInfo(header_name)
 
-        with open(hfi["file"], "rb") as fp:
+        with open(hfi.filename, "rb") as fp:
 
             try:
                 fp.seek(ha_info.pos_name)
@@ -267,8 +259,7 @@ class HarFileIO(object):
             else:
                 raise RuntimeError("Unsupported/unrecognised HAR header version.")
 
-        return header.HeaderArrayObj.HeaderArrayFromData(name=ha_info.name,
-                                     coeff_name=getattr(ha_info, "coeff_name", None),
+        return header.HeaderArrayObj.HeaderArrayFromData(coeff_name=ha_info.coeff_name,
                                      long_name=ha_info.long_name,
                                      version=ha_info.version,
                                      data_type=ha_info.data_type,
@@ -658,7 +649,7 @@ class HarFileIO(object):
             raise IOError('File Corrupted, start int does not match end int.')
 
     @staticmethod
-    def writeHeaders(filename: 'Union[str, io.BufferedWriter]',
+    def writeHeaders(filename: 'Union[str, io.BufferedWriter]', hnames : 'List[str]',
                      head_arr_objs: 'Union[header.HeaderArrayObj, List[header.HeaderArrayObj]]'):
         """
         :param filename: name of file to write into.
@@ -684,26 +675,26 @@ class HarFileIO(object):
             raise TypeError("'filename' is invalid - must be either file object or string.")
 
         with fp:
-            for head_arr_obj in head_arr_objs:
+            for hname, head_arr_obj in zip(hnames, head_arr_objs):
                 header_type_str = str(head_arr_obj["array"].dtype)
                 has_sets = "sets" in head_arr_obj
                 # HarFileIO._writeHeader(fp, head_arr_obj)
                 if 'float32' == header_type_str and (head_arr_obj["array"].ndim != 2 or has_sets):
-                    HarFileIO._writeHeader7D(fp, head_arr_obj)
+                    HarFileIO._writeHeader7D(fp, hname, head_arr_obj)
                 elif 'int32' == header_type_str or 'float32' == header_type_str:
-                    HarFileIO._writeHeader2D(fp, head_arr_obj)
+                    HarFileIO._writeHeader2D(fp, hname, head_arr_obj)
                 elif '<U' in header_type_str or '|S' in header_type_str:
                     if head_arr_obj["array"].ndim > 1:
                         print('"' + head_arr_obj["name"] + '" can not be written as character arrays ndim>1 are not yet supported')
                         return
-                    HarFileIO._writeHeader1C(fp, head_arr_obj)
+                    HarFileIO._writeHeader1C(fp, hname, head_arr_obj)
                 else:
                     raise TypeError('Can not write data in Header: "' +
                                     head_arr_obj["name"] + '" as data style does not match any known Header type')
                 fp.flush()
 
     @staticmethod
-    def _writeHeader(fp: io.BufferedReader, head_arr_obj: header.HeaderArrayObj):
+    def _writeHeader(fp: io.BufferedReader, hname : str, head_arr_obj: header.HeaderArrayObj):
 
         head_arr_obj["storage_type"] = 'FULL'
 
@@ -744,18 +735,18 @@ class HarFileIO(object):
 
         if head_arr_obj["data_type"] in ["RE", "RL"]:
             if head_arr_obj["storage_type"] == 'FULL':
-                HarFileIO._write7DFullArray(fp, np.asfortranarray(head_arr_obj["array"]), type_char)
+                HarFileIO._write7DFullArray(fp, hname, np.asfortranarray(head_arr_obj["array"]), type_char)
             else:
-                HarFileIO._write7DSparseArray(fp, np.asfortranarray(head_arr_obj["array"]), type_char)
+                HarFileIO._write7DSparseArray(fp, hname,  np.asfortranarray(head_arr_obj["array"]), type_char)
         elif head_arr_obj["data_type"] in ["2I", "2R"]:
-            HarFileIO._write2DArray(fp, np.asfortranarray(head_arr_obj["array"]), type_char)
+            HarFileIO._write2DArray(fp, hname, np.asfortranarray(head_arr_obj["array"]), type_char)
         elif head_arr_obj["data_type"] in ["1C"]:
-            HarFileIO._write1CArray(fp, np.asfortranarray(head_arr_obj["array"]), head_arr_obj["array"].size, int(header_type_str[2:]))
+            HarFileIO._write1CArray(fp, hname, np.asfortranarray(head_arr_obj["array"]), head_arr_obj["array"].size, int(header_type_str[2:]))
         else:
             raise ValueError("Unknown 'data_type' for this HeaderArrayObj.")
 
     @staticmethod
-    def _writeHeader7D(fp: io.BufferedReader, head_arr_obj: header.HeaderArrayObj):
+    def _writeHeader7D(fp: io.BufferedReader, hname : str, head_arr_obj: header.HeaderArrayObj):
         hasElements = isinstance(head_arr_obj["sets"], list)
         dataFill = float(np.count_nonzero(head_arr_obj["array"])) / head_arr_obj["array"].size
 
@@ -766,7 +757,7 @@ class HarFileIO(object):
 
         shape7D = [head_arr_obj["array"].shape[i] if i < head_arr_obj["array"].ndim else 1 for i in range(0, 7)]
 
-        HarFileIO._writeHeaderName(fp, head_arr_obj["name"])
+        HarFileIO._writeHeaderName(fp, hname)
         if hasElements:
             HeaderType = 'RE'
         else:
@@ -784,8 +775,8 @@ class HarFileIO(object):
             HarFileIO._write7DSparseArray(fp, np.asfortranarray(head_arr_obj["array"]), 'f')
 
     @staticmethod
-    def _writeHeader2D(fp: io.BufferedReader, head_arr_obj: header.HeaderArrayObj):
-        HarFileIO._writeHeaderName(fp, head_arr_obj["name"])
+    def _writeHeader2D(fp: io.BufferedReader, hname : str, head_arr_obj: header.HeaderArrayObj):
+        HarFileIO._writeHeaderName(fp, hname)
         typeString = str(head_arr_obj["array"].dtype)
         shape2D = [head_arr_obj["array"].shape[i] if i < head_arr_obj["array"].ndim else 1 for i in range(0, 2)]
         if typeString == 'int32':
@@ -800,9 +791,9 @@ class HarFileIO(object):
         HarFileIO._write2DArray(fp, np.asfortranarray(head_arr_obj["array"]), dtype)
 
     @staticmethod
-    def _writeHeader1C(fp: io.BufferedReader, head_arr_obj: header.HeaderArrayObj):
+    def _writeHeader1C(fp: io.BufferedReader, hname : str, head_arr_obj: header.HeaderArrayObj):
 
-        HarFileIO._writeHeaderName(fp, head_arr_obj["name"])
+        HarFileIO._writeHeaderName(fp, hname)
         typeString = str(head_arr_obj["array"].dtype)
         no_chars = int(typeString[2:])
         secRecList = ['    ', '1C', 'FULL', head_arr_obj["long_name"], 2, head_arr_obj["array"].size, no_chars]
