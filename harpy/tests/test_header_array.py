@@ -88,7 +88,24 @@ class TestHeaderArray(unittest.TestCase):
 
         self.assertTrue(np.allclose(hao3.array, np.array([[1, 4], [9, 16]])))
 
+
         hao3 = hao1 / array_2d
+
+        self.assertTrue(np.allclose(hao3.array, np.array([[1, 1], [1, 1]])))
+
+        hao3 = array_2d + hao1
+
+        self.assertTrue(np.allclose(hao3.array, array_2d*2))
+
+        hao3 = array_2d - hao1
+
+        self.assertTrue(np.allclose(hao3.array, np.array([[0, 0], [0, 0]])))
+
+        hao3 = array_2d * hao1
+
+        self.assertTrue(np.allclose(hao3.array, np.array([[1, 4], [9, 16]])))
+
+        hao3 = array_2d / hao1
 
         self.assertTrue(np.allclose(hao3.array, np.array([[1, 1], [1, 1]])))
 
@@ -114,6 +131,22 @@ class TestHeaderArray(unittest.TestCase):
 
         self.assertTrue(np.allclose(hao3.array, array_2d / 2))
 
+        hao3 = 2 + hao1
+
+        self.assertTrue(np.allclose(hao3.array, array_2d + 2))
+
+        hao3 = 1 - hao1
+
+        self.assertTrue(np.allclose(hao3.array, 1 - array_2d ))
+
+        hao3 = 3 * hao1
+
+        self.assertTrue(np.allclose(hao3.array, array_2d * 3))
+
+        hao3 = 2 / hao1
+
+        self.assertTrue(np.allclose(hao3.array, 2 / array_2d ))
+
     def test_array_operation_float(self):
 
         array_2d = np.array([[1.0, 2.0], [3.0, 4.0]])
@@ -135,6 +168,22 @@ class TestHeaderArray(unittest.TestCase):
         hao3 = hao1 / -2.5
 
         self.assertTrue(np.allclose(hao3.array, array_2d / -2.5))
+
+        hao3 = 1.5 + hao1
+
+        self.assertTrue(np.allclose(hao3.array, array_2d + 1.5))
+
+        hao3 = 0.5 - hao1
+
+        self.assertTrue(np.allclose(hao3.array, 0.5 - array_2d))
+
+        hao3 = 3.14 * hao1
+
+        self.assertTrue(np.allclose(hao3.array, array_2d * 3.14))
+
+        hao3 = -2.5 / hao1
+
+        self.assertTrue(np.allclose(hao3.array, -2.5 / array_2d))
 
     def test_attributes_style(self):
         """Note that the values set by the setter methods are NOT guaranteed to be consistent or legitimate. Implementation of further checks with the attribute-style referencing may cause this test to fail."""

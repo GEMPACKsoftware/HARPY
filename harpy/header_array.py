@@ -11,12 +11,14 @@ from harpy._header_sets import  _HeaderDims
 
 class HeaderArrayObj(object):
 
+    __array_priority__ = 2 #make this precede the np __add__ operations, etc
+
     def __init__(self, *args, **kwargs):
         
         super().__init__(*args, **kwargs)
 
     @property
-    def array(self):
+    def array(self) -> np.ndarray:
         return self._array
 
     @array.setter
@@ -83,6 +85,21 @@ class HeaderArrayObj(object):
     @sets.setter
     def sets(self, obj):
         self._sets = obj
+
+    def __getitem__(self, item):
+        npInd, newDim = self._sets.transform_index(item)
+        return HeaderArrayObj.HeaderArrayFromData(array=self.array[npInd], sets=newDim)
+
+    def __setitem__(self, key, value):
+        npInd, newDim = self._sets.transform_index(key)
+        if isinstance(value,HeaderArrayObj):
+            self.array = value.array
+        elif isinstance(value,(np.ndarray,int,float)):
+            self.array=value
+        else:
+            raise TypeError("Only HeaderArrayObj, np.ndarray, int, float  allowed in __setitem__")
+
+
 
     def is_valid(self, raise_exception=True) -> bool:
         """
@@ -196,17 +213,13 @@ class HeaderArrayObj(object):
 
 
         if issubclass(type(other), HeaderArrayObj):
-            other = other.array
-        elif issubclass(type(other), (float, int)):
-            other = np.ones_like(self.array)*other
-
-        try:
-            assert(issubclass(type(other), np.ndarray))
-        except AssertionError:
+            new_array = getattr(self.array, operation)(other.array)
+        elif issubclass(type(other), (np.ndarray, float, int)):
+            new_array = getattr(self.array, operation)(other)
+        else:
             msg = "Operation is not permitted for objects that are not of 'numpy.ndarray' type, or 'HeaderArrayObj' type."
             raise TypeError(msg)
 
-        new_array = getattr(self.array, operation)(other)
         return HeaderArrayObj.HeaderArrayFromData( array=new_array, **kwargs)
 
     def __add__(self, other):
@@ -227,12 +240,38 @@ class HeaderArrayObj(object):
     def __mod__(self, other):
         return self.array_operation(other, "__mod__")
 
-    def __matmul__(self, other):
-        return self.array_operation(other, "__matmul__")
-
     def __sub__(self, other):
         return self.array_operation(other, "__sub__")
 
+    def __radd__(self, other):
+        return self.array_operation(other, "__radd__")
+
+    def __rmul__(self, other):
+        return self.array_operation(other, "__rmul__")
+
+    def __rtruediv__(self, other):
+        return self.array_operation(other, "__rtruediv__")
+
+    def __rfloordiv__(self, other):
+        return self.array_operation(other, "__rfloordiv__")
+
+    def __rpow__(self, other):
+        return self.array_operation(other, "__rpow__")
+
+    def __rmod__(self, other):
+        return self.array_operation(other, "__rmod__")
+
+    def __rsub__(self, other):
+        return self.array_operation(other, "__rsub__")
+
+    def __str__(self) -> str:
+        outputstr="\n"
+        outputstr+="CoeffName".ljust(24)+": "+self.coeff_name+"\n"
+        outputstr+="Rank".ljust(24)+": "+str(len(self.array.shape))+"\n"
+        if self.sets:
+            outputstr += self.sets.__str__()
+
+        return outputstr
 
     class UnsupportedArrayType(TypeError):
         """Raised if invalid array type passed."""
