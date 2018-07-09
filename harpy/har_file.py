@@ -11,6 +11,9 @@ Created on Mar 12 09:53:27 2018
 from .har_file_io import HarFileIO
 from .header_array import HeaderArrayObj
 from collections import OrderedDict
+from typing import TypeVar
+
+TypeHarFileObj = TypeVar('TypeHarFileObj', bound='HarFileObj')
 
 class HarFileObj(object):
     """
@@ -201,7 +204,7 @@ class HarFileObj(object):
 
 
     @staticmethod
-    def loadFromDisk(filename: str, ha_names: list = None) -> 'HarFileObj':
+    def loadFromDisk(filename: str, ha_names: list = None) -> TypeHarFileObj:
         """Loads a HAR file into memory, returning a HarFileObj.
 
         :param filename: The name of the file to load.

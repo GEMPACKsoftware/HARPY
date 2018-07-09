@@ -88,7 +88,6 @@ class TestHeaderArray(unittest.TestCase):
 
         self.assertTrue(np.allclose(hao3.array, np.array([[1, 4], [9, 16]])))
 
-
         hao3 = hao1 / array_2d
 
         self.assertTrue(np.allclose(hao3.array, np.array([[1, 1], [1, 1]])))
@@ -195,22 +194,61 @@ class TestHeaderArray(unittest.TestCase):
         hao.coeff_name = "ABCDEF"
         hao.long_name = "A test header array object."
         hao.array = np.array([[1.0, 2.0], [3.0, 4.0]])
-        hao.data_type = "2R"
-        hao.version = 1
-        hao.storage_type = "SPSE"
-        hao.file_dims = 2
-        hao.sets = ["A"]
 
         # Test getters
         self.assertEqual(hao.name, "ABC")
         self.assertEqual(hao.coeff_name, "ABCDEF")
         self.assertEqual(hao.long_name, "A test header array object.")
         self.assertTrue(np.allclose(hao.array, np.array([[1.0, 2.0], [3.0, 4.0]])))
-        self.assertEqual(hao.data_type, "2R")
-        self.assertEqual(hao.version, 1)
-        self.assertEqual(hao.storage_type, "SPSE")
-        self.assertEqual(hao.file_dims, 2)
-        self.assertEqual(hao.sets, ["A"])
+
+    def test_getitem_setitem(self):
+        hfo = HarFileObj.loadFromDisk(TestHeaderArray._dd + "test.har")
+        nh01=hfo["NH01"]
+
+        nh01[:,:]=np.array([[1.0, 2.0], [3.0, 4.0]])
+        self.assertTrue(np.allclose(nh01.array, np.array([[1.0, 2.0], [3.0, 4.0]])))
+
+        nh01[[0,1], [0,1]] = np.array([[4.0, 3.0], [2.0, 1.0]])
+        self.assertTrue(np.allclose(nh01.array, np.array([[4.0, 3.0], [2.0, 1.0]])))
+
+        nh01[ 0, : ] = np.array([1.0, 2.0])
+        self.assertTrue(np.allclose(nh01.array, np.array([[1.0, 2.0], [2.0, 1.0]])))
+
+        nh01[ [0], : ] = np.array([3.0, 4.0])
+        self.assertTrue(np.allclose(nh01.array, np.array([[3.0, 4.0], [2.0, 1.0]])))
+
+        nh01[ ... ]=np.array([[1.0, 2.0], [3.0, 4.0]])
+        self.assertTrue(np.allclose(nh01.array, np.array([[1.0, 2.0], [3.0, 4.0]])))
+
+        nh01[["A","B"], [0,1]] = np.array([[4.0, 3.0], [2.0, 1.0]])
+        self.assertTrue(np.allclose(nh01.array, np.array([[4.0, 3.0], [2.0, 1.0]])))
+
+        newHead=nh01[["A","B"], [0,1]]
+        self.assertTrue(np.allclose(newHead.array, np.array([[4.0, 3.0], [2.0, 1.0]])))
+        self.assertTrue(newHead.setNames==nh01.setNames)
+
+        newHead=nh01[["A"], [0,1]]
+        self.assertTrue(np.allclose(newHead.array, np.array([[4.0, 3.0]])))
+        self.assertTrue(newHead.rank==2)
+
+        newHead=nh01["A", [0,1]]
+        self.assertTrue(np.allclose(newHead.array, np.array([4.0, 3.0])))
+        self.assertTrue(newHead.rank==1)
+
+        newHead=nh01["A", 0]
+        self.assertTrue(np.allclose(newHead.array, 4.0 ))
+        self.assertTrue(newHead.rank==0)
+
+        newHead2=newHead[None]
+        self.assertTrue(newHead2.rank == 1)
+
+
+        newHead=nh01["A", [0,1]] #[4,3]
+        newHead2=newHead[:,None]*nh01 # multiply as col vector
+        self.assertTrue(np.allclose(newHead2.array, np.array([[4.0],[3.0]])*np.array([[4.0, 3.0], [2.0, 1.0]])))
+
+        newHead2=newHead[None,[0,1]]*nh01 # multiply as row vector
+        self.assertTrue(np.allclose(newHead2.array, np.array([[4.0,3.0]])*np.array([[4.0, 3.0], [2.0, 1.0]])))
 
 
 if __name__ == "__main__":

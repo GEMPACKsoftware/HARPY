@@ -8,7 +8,6 @@ import numpy as np
 from harpy._header_sets import  _HeaderDims
 
 
-
 class HeaderArrayObj(object):
 
     __array_priority__ = 2 #make this precede the np __add__ operations, etc
@@ -47,38 +46,6 @@ class HeaderArrayObj(object):
         self._long_name = obj
 
     @property
-    def data_type(self):
-        return self._data_type
-
-    @data_type.setter
-    def data_type(self, obj):
-        self._data_type = obj
-
-    @property
-    def version(self):
-        return self._version
-
-    @version.setter
-    def version(self, obj):
-        self._version = obj
-
-    @property
-    def storage_type(self):
-        return self._storage_type
-
-    @storage_type.setter
-    def storage_type(self, obj):
-        self._storage_type = obj
-
-    @property
-    def file_dims(self):
-        return self._file_dims
-
-    @file_dims.setter
-    def file_dims(self, obj):
-        self._file_dims = obj
-
-    @property
     def sets(self):
         return self._sets
 
@@ -86,16 +53,28 @@ class HeaderArrayObj(object):
     def sets(self, obj):
         self._sets = obj
 
-    def __getitem__(self, item):
-        npInd, newDim = self._sets.transform_index(item)
-        return HeaderArrayObj.HeaderArrayFromData(array=self.array[npInd], sets=newDim)
+    @property
+    def setNames(self):
+        return self._sets.setNames
+
+    @property
+    def setElements(self):
+        return self._sets.setElements
+
+    @property
+    def rank(self):
+        return len(self.array.shape)
+
+    def __getitem__(self, item) -> 'HeaderArrayObj':
+        npInd, rankInd, newDim = self._sets.transform_index(item)
+        return HeaderArrayObj.HeaderArrayFromData(array=np.array(self.array[npInd][rankInd]), sets=newDim)
 
     def __setitem__(self, key, value):
-        npInd, newDim = self._sets.transform_index(key)
+        npInd, rankInd, newDim = self._sets.transform_index(key)
         if isinstance(value,HeaderArrayObj):
-            self.array = value.array
+            self.array[npInd] = value.array
         elif isinstance(value,(np.ndarray,int,float)):
-            self.array=value
+            self.array[npInd]=value
         else:
             raise TypeError("Only HeaderArrayObj, np.ndarray, int, float  allowed in __setitem__")
 
@@ -137,21 +116,11 @@ class HeaderArrayObj(object):
 
         return True
 
-    def getSet(self, name: str):
-        if "sets" not in self:
-            raise KeyError("HeaderArrayObj does not have 'sets'.")
-
-        for s in self._sets:
-            if s["name"] == name:
-                return s
-        else:
-            raise ValueError("'%s' is not the name of a set in HeaderArrayObj '%s'." % (name, self._name))
-
 
     @staticmethod
     def HeaderArrayFromData(array: np.ndarray, coeff_name: str=None, long_name: str=None,
                             version: int=1, storage_type=None, file_dims=None, data_type=None,
-                            sets: 'Union[None, List[dict]]'=None):
+                            sets: 'Union[None, List[dict]]'=None) -> 'HeaderArrayObj':
         """
         Creates a new HeaderArrayObj from basic data.
 
@@ -189,7 +158,10 @@ class HeaderArrayObj(object):
         hao.array = array
         hao.coeff_name = coeff_name
         hao.long_name = long_name
-        hao.sets = sets
+        if sets is None:
+            hao.sets = _HeaderDims.fromShape(array.shape)
+        else:
+            hao.sets = sets
         hao.version = version
         hao.data_type = data_type
         hao.storage_type = storage_type
@@ -201,7 +173,7 @@ class HeaderArrayObj(object):
     def array_operation(self,
                         other: "Union[np.ndarray, HeaderArrayObj]",
                         operation: str,
-                        **kwargs):
+                        **kwargs) -> 'HeaderArrayObj':
         """
         This method is implemented to allow for operations on the arrays of HeaderArrayObjs. Most Tablo-like
         functionality is replicated with this method.
@@ -214,13 +186,18 @@ class HeaderArrayObj(object):
 
         if issubclass(type(other), HeaderArrayObj):
             new_array = getattr(self.array, operation)(other.array)
-        elif issubclass(type(other), (np.ndarray, float, int)):
+            new_sets=self._sets.matchSets(sets=other._sets)
+        elif issubclass(type(other), (np.ndarray)):
             new_array = getattr(self.array, operation)(other)
+            new_sets=self._sets.matchSets(shape=other.shape)
+        elif issubclass(type(other), (float, int)):
+            new_array = getattr(self.array, operation)(other)
+            new_sets=self._sets
         else:
             msg = "Operation is not permitted for objects that are not of 'numpy.ndarray' type, or 'HeaderArrayObj' type."
             raise TypeError(msg)
 
-        return HeaderArrayObj.HeaderArrayFromData( array=new_array, **kwargs)
+        return HeaderArrayObj.HeaderArrayFromData( array=new_array, sets=new_sets, **kwargs)
 
     def __add__(self, other):
         return self.array_operation(other, "__add__")
