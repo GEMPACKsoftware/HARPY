@@ -1,8 +1,6 @@
 """
 Created on Mar 02 10:23:40 2018
 
-.. sectionauthor:: Lyle Collins <Lyle.Collins@csiro.au>
-.. codeauthor:: Lyle Collins <Lyle.Collins@csiro.au>
 """
 from collections import OrderedDict
 import io

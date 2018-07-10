@@ -1,8 +1,6 @@
 """
 Created on Jun 29 14:46:48 2018
 
-.. sectionauthor:: Lyle Collins <Lyle.Collins@csiro.au>
-.. codeauthor:: Lyle Collins <Lyle.Collins@csiro.au>
 """
 
 import numpy as np

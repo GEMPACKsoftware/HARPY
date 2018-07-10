@@ -3,9 +3,6 @@
     :members:
 
 Created on Mar 12 09:53:27 2018
-
-.. sectionauthor:: Lyle Collins <Lyle.Collins@csiro.au>
-.. codeauthor:: Lyle Collins <Lyle.Collins@csiro.au>
 """
 
 from .har_file_io import HarFileIO, HarFileInfoObj
