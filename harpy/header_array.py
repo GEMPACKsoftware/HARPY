@@ -102,8 +102,8 @@ class HeaderArrayObj(object):
             else:
                 return False
 
-        if (self.sets is not None) and (not isinstance(self._sets, _HeaderDims)):
-            raise TypeError("'sets' must be a list or None.")
+        if not isinstance(self._sets, _HeaderDims):
+            raise TypeError("'sets' must be of type _HeaderDims")
 
         if not isinstance(self.long_name, str):
             raise TypeError("'long_name' must be of str type.")
@@ -111,15 +111,13 @@ class HeaderArrayObj(object):
         if not isinstance(self.coeff_name, str):
             raise TypeError("'coeff_name' must be of str type.")
 
-        if not isinstance(self.version, int):
-            raise TypeError("'version' must be an integer.")
-
+        if self._sets.shape != self.array.shape:
+            raise ValueError("shape of set and array does not match")
         return True
 
 
     @staticmethod
     def HeaderArrayFromData(array: np.ndarray, coeff_name: str=None, long_name: str=None,
-                            version: int=1, storage_type=None, file_dims=None, data_type=None,
                             sets: 'Union[None, List[dict]]'=None) -> 'HeaderArrayObj':
         """
         Creates a new HeaderArrayObj from basic data.
@@ -162,10 +160,6 @@ class HeaderArrayObj(object):
             hao.sets = _HeaderDims.fromShape(array.shape)
         else:
             hao.sets = sets
-        hao.version = version
-        hao.data_type = data_type
-        hao.storage_type = storage_type
-        hao.file_dims = file_dims
 
         if hao.is_valid():
             return hao

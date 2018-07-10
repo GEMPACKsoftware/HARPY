@@ -20,13 +20,29 @@ class HarFileObj(object):
     """
     HAR file object - essentially a memory representation of a HAR file.
 
-    ``HarFileObj``  stores a `list` of ``harpy.HeaderArrayObj`` in ``self``. Each ``harpy.HeaderArrayObj`` corresponds to a header-array. If ``HarFileObj`` is provided with ``filename``, then the header-arrays in that file will be loaded - i.e. each ``harpy.HeaderArrayObj``  in ``self`` will correspond to a header-array in that file.
+    ``HarFileObj``  stores a `list` of ``harpy.HeaderArrayObj`` in ``self``.
+     Each ``harpy.HeaderArrayObj`` corresponds to a header-array.
+     If ``HarFileObj`` is provided with ``filename``, then the header-arrays in that file will be loaded - i.e. each ``harpy.HeaderArrayObj``  in ``self`` will correspond to a header-array in that file.
 
     Access to the ``HarFileObj``  is provided in a dict like style, __getitem__, __set_item__, __del_item__ and __contains__ are implemented. Each can take list arguments as well and returns result as list.
+    Note that all methods are case insesitive with respect to names of Headers.
+
+    Example: given file ex.har with Headers HD1 and HD2
+
+    >>> from harpy import HarFileObj
+    >>> thisHar=HarFileObj("ex.har")
+    >>> headersOnFile= thisHar.getHeaderArrayNames() # ["HD1","HD2"]
+    >>> hd1Head=thisHar["HD1"] # obtain the HeaderArrayObj for HD1
+    >>> del thisHar["HD1"] # remove HD1 from HarFile
+    >>> print ("HD1" in thisHar)
+    False
+    >>> thisHAR.writeToDisk() # overwrites ex.har, now only contains HD2 as HD1 was deleted
+
 
     The complete list of attributes is:
 
-    :param list head_arrs: Returned/provided as a `list` of ``HeaderArrayObj`` defining all ``HeaderArrayObj`` associated with a file.
+    :param OrderedDict head_arrs: Returned/provided as a `list` of ``HeaderArrayObj`` defining all ``HeaderArrayObj`` associated with a file.
+    :param HarFileInfoObj _hfi  : Basic info of the HAr file content. This is used in conjuction with head_arrs to permit on the fly reading of ``HeaderArrayObj`` and thus readuce the memory footprint.
 
     And the methods of ``HarFileObj`` are:
     """
@@ -42,24 +58,24 @@ class HarFileObj(object):
 
     def __getitem__(self, item : 'Union[str, list[str]]' ):
         if isinstance(item,str):
-            return self.getHeaderArrayObj(item)
+            return self._getHeaderArrayObj(item)
         elif isinstance(item,list):
             if not all([isinstance(myitem,str) for myitem in item]):
                 raise TypeError("All items in item must be of type 'str'")
-            return self.getHeaderArrayObjs(item)
+            return self._getHeaderArrayObjs(item)
         else:
             raise TypeError("item must be string or list of strings")
 
 
     def __setitem__(self, key: 'Union[str, list[str]]', value: 'Union[HeaderArrayObj, list[HeaderArrayObj]]'):
         if isinstance(key, str) and isinstance(value,HeaderArrayObj):
-            self.addHeaderArrayObj(key, value)
+            self._addHeaderArrayObj(key, value)
         elif isinstance(key, list) and isinstance(value,list):
             if not all([isinstance(mykey,str) for mykey in key]):
                 raise TypeError("All items in key must be of type 'str'")
             if not all([isinstance(myval,HeaderArrayObj) for myval in value]):
                 raise TypeError("All items in value must be of type 'HeaderArrayObj'")
-            self.addHeaderArrayObjs(key,value)
+            self._addHeaderArrayObjs(key, value)
         else:
             raise TypeError("Only combination str-HeaderArrayObj or list(str)-list(HeaderArrayObj) permitted in __getitem__'")
 
@@ -108,7 +124,7 @@ class HarFileObj(object):
         return [key for key,val in self._hfi.items() if val.data_type in ["RE"]]
 
 
-    def getHeaderArrayObj(self, ha_name: str):
+    def _getHeaderArrayObj(self, ha_name: str):
         """
         Retrieve a single ``harpy.HeaderArrayObj``.
 
@@ -132,7 +148,7 @@ class HarFileObj(object):
 
         return self._head_arrs[upname]
 
-    def getHeaderArrayObjs(self, ha_names=None):
+    def _getHeaderArrayObjs(self, ha_names=None):
         """
         Retrieve a `list` of `harpy.HeaderArrayObj`.
 
@@ -147,10 +163,10 @@ class HarFileObj(object):
 
         ha_objs = []
         for ha_name in ha_names:
-            ha_objs.append(self.getHeaderArrayObj(ha_name))
+            ha_objs.append(self._getHeaderArrayObj(ha_name))
         return ha_objs
 
-    def readHeaderArrayObjs(self, filename: str, ha_names = None):
+    def _readHeaderArrayObjs(self, filename: str, ha_names = None):
         """
          Reads the header array objects with names ``ha_names`` from ``filename``. If `None` (the default), read all header array objects. `harpy.HeaderArrayObj` are stored in ``self`` and can be retrieved with the ``self.getHeaderArrayObjs()`` method.
 
@@ -173,11 +189,11 @@ class HarFileObj(object):
         elif isinstance(ha_names, str):
             ha_names = [ha_names]
 
-        ha_to_write = self.getHeaderArrayObjs(ha_names)
+        ha_to_write = self._getHeaderArrayObjs(ha_names)
 
         HarFileIO.writeHeaders(filename, ha_names, ha_to_write)
 
-    def removeHeaderArrayObjs(self, ha_names):
+    def _removeHeaderArrayObjs(self, ha_names):
         """
         TODO: its more of a pop, not a remove, maybe rename
         :param 'Union[str,List[str]]' ha_names: Remove one or more `harpy.HeaderArrayObj` from ``self``.
@@ -186,7 +202,7 @@ class HarFileObj(object):
         if isinstance(ha_names, str):
             ha_names = [ha_names]
 
-        outlist=self.getHeaderArrayObjs(ha_names)
+        outlist=self._getHeaderArrayObjs(ha_names)
 
         for ha_name in ha_names:
             if ha_name.strip().upper() in self._hfi:
@@ -195,7 +211,7 @@ class HarFileObj(object):
                 del self._head_arrs[ha_name.strip().upper()]
         return outlist
 
-    def addHeaderArrayObjs(self, hnames, ha_objs) -> None:
+    def _addHeaderArrayObjs(self, hnames, ha_objs) -> None:
         """
         :param 'Union[HeaderArrayObj,List[HeaderArrayObj]]' ha_objs: Add one or more `harpy.HeaderArrayObj` to ``self``.
         """
@@ -207,11 +223,11 @@ class HarFileObj(object):
 
         for hname, ha_obj in zip(hnames,ha_objs):
             if ha_obj.is_valid():
-                self.addHeaderArrayObj(hname, ha_obj)
+                self._addHeaderArrayObj(hname, ha_obj)
 
         return None
 
-    def addHeaderArrayObj(self, hname : str, ha_obj: HeaderArrayObj):
+    def _addHeaderArrayObj(self, hname : str, ha_obj: HeaderArrayObj):
         """
         :param ha_obj: A `harpy.HeaderArrayObj` object.
         :param idx: The index of ``self["head_arrs"]`` at which to insert ``ha_obj``.
@@ -225,7 +241,7 @@ class HarFileObj(object):
 
 
     @staticmethod
-    def loadFromDisk(filename: str, ha_names: list = None) -> TypeHarFileObj:
+    def _loadFromDisk(filename: str, ha_names: list = None) -> TypeHarFileObj:
         """Loads a HAR file into memory, returning a HarFileObj.
 
         :param filename: The name of the file to load.
@@ -234,7 +250,7 @@ class HarFileObj(object):
         """
 
         hfo = HarFileObj(filename=filename)
-        hfo.readHeaderArrayObjs(hfo._hfi, ha_names=ha_names)
+        hfo._readHeaderArrayObjs(hfo._hfi, ha_names=ha_names)
 
         return hfo
 
