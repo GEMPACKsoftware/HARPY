@@ -239,8 +239,11 @@ class HarFileIO(object):
                 ha_info.header_type = "data"
                 if ha_info.data_type == '1C':
                     ha_info.array = HarFileIO._read1CArray(fp, file_dims=ha_info.file_dims)
-                    setList = [_HeaderSet(name=None, status='n', dim_desc=None, dim_size=ha_info.file_dims[idim]) for
-                                        idim in range(0, 1)]
+                    if ha_info.long_name.startswith("Set "):
+                        setList = [_HeaderSet(name=ha_info.long_name.split()[1], status='k',
+                                              dim_desc=ha_info.array.tolist(), dim_size=ha_info.file_dims[0])]
+                    else:
+                        setList = [_HeaderSet(name=None, status='n', dim_desc=None, dim_size=ha_info.file_dims[idim]) for idim in range(0, 1)]
                     ha_info.sets = _HeaderDims(setList)
                 elif ha_info.data_type == 'RE':
                     ha_info.has_elements = True
@@ -266,10 +269,6 @@ class HarFileIO(object):
 
         return header.HeaderArrayObj.HeaderArrayFromData(coeff_name=ha_info.coeff_name,
                                      long_name=ha_info.long_name,
-                                     version=ha_info.version,
-                                     data_type=ha_info.data_type,
-                                     storage_type=ha_info.storage_type,
-                                     file_dims=ha_info.file_dims,
                                      array=ha_info.array,
                                      sets=ha_info.sets)
 
@@ -344,9 +343,6 @@ class HarFileIO(object):
 
         if hasSets:
             (header_info.coeff_name, header_info.sets) = HarFileIO._readSets(fp, file_dims=file_dims)
-
-            # print("har_io._read7DArray() set_names ", [set["name"] for set in header_info["sets"]])
-
             tmpDim = header_info.sets.ndim()
         else:
             header_info.sets=_HeaderDims([_HeaderSet(name=None, status='n', dim_desc=None, dim_size= file_dims[idim]) for idim in range(0,7)])
@@ -355,13 +351,13 @@ class HarFileIO(object):
         array = np.ndarray(shape=file_dims[0:tmpDim], dtype=np.float32, order='F')
         array.fill(0.0)
 
-        # print("har_io._read7DArray() header_info[\"storage_type\"]", header_info["storage_type"])
-        # print(header_info["storage_type"] == 'FULL')
         if header_info.storage_type == 'FULL':
             array = HarFileIO._readREFullObj(fp, array, 'f')
         else:
             array = HarFileIO._readRESparseObj(fp, array, 'f')
-        return np.ascontiguousarray(array)
+        # this is needed for rank 0 objects
+        myshape=array.shape
+        return np.ascontiguousarray(array).reshape(myshape)
 
 
     @staticmethod
@@ -474,7 +470,6 @@ class HarFileIO(object):
         oldshape = array.shape
         array = array.flatten('F')
         idata = 0
-
         while nrec > 1:
             nbyte = HarFileIO._getEntrySize(fp)
             dataForm = '4s15i'
@@ -501,7 +496,6 @@ class HarFileIO(object):
             array[idata:idata + ndata] = V[2:]
             idata += ndata
         array = array.reshape(oldshape, order='F')
-
         return array
 
     @staticmethod
@@ -604,8 +598,7 @@ class HarFileIO(object):
         for name, status in zip(set_names, SetStatus):
             if status == 'k':
                 if name not in processedSet:
-                    processedSet[name] = HarFileIO._readCharVec(fp, itemsize=12, as_unicode=as_unicode, size=tuple([file_dims[idim]]),
-                                    dtype="<U12")
+                    processedSet[name] = HarFileIO._readCharVec(fp, itemsize=12, as_unicode=as_unicode, size=tuple([file_dims[idim]]), dtype="<U12")
                 header_sets.append(_HeaderSet(name=name, status=status, dim_desc=[item.strip() for item in processedSet[name]], dim_size= file_dims[idim]))
             elif status == 'u':
                 header_sets.append(_HeaderSet(name=name, status=status, dim_desc=None, dim_size= file_dims[idim]))
@@ -673,8 +666,6 @@ class HarFileIO(object):
 
         if isinstance(filename, str):
             fp = open(filename, "wb")
-        # elif issubclass(type(filename), io.BufferedWriter):
-        #     fp = filename
         else:
             raise TypeError("'filename' is invalid - must be either file object or string.")
 
@@ -823,12 +814,10 @@ class HarFileIO(object):
 
         List = [tb(x) if isinstance(x, str) else x for x in List]
         dataForm = '=i4s2s4s70s' + 'i' * nint + 'i' # For reading it is "=4s2s4s70si"
-        # print("HarFileIO._writeSecondRecord() dataForm ", dataForm)
         byteLen = struct.calcsize(dataForm) - 8
         List.append(byteLen)
         List.insert(0, byteLen)
         packed = struct.pack(dataForm, *List)
-        # print("HarFileIO._writeSecondRecord() ", len(packed))
         fp.write(packed)
 
     @staticmethod
@@ -966,12 +955,7 @@ class HarFileIO(object):
         fp.write(struct.pack('=i', nbyte))
 
     @staticmethod
-    def _writeSetElInfo(fp,
-                        # sets,
-                        # indexTypes,
-                        # Elements,
-                        # CName,
-                        header_arr_obj: header.HeaderArrayObj):
+    def _writeSetElInfo(fp, header_arr_obj: header.HeaderArrayObj):
 
         sets = [set.name for set in header_arr_obj.sets.dims]
         indexTypes = [set.status for set in header_arr_obj.sets.dims]

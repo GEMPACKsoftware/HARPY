@@ -56,8 +56,6 @@ class _HeaderSet():
             if useElem:
                 if len(set(setElList)) != len(setElList):
                     raise ValueError("Indexing leads to duplicate set elements which is not permitted")
-
-            if useElem:
                 if setElList != self.dim_desc:
                     return npIndList, _HeaderSet(self._newname(), self.status, setElList, len(npIndList))
                 else:
@@ -133,8 +131,9 @@ class _HeaderDims():
     def setElements(self):
         return [dim.dim_desc for dim in self.dims]
 
+    @property
     def shape(self):
-        return (sets.dim_size for sets in self._dims)
+        return tuple([sets.dim_size for sets in self._dims])
 
     def __str__(self):
         outputstr=""

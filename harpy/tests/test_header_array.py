@@ -20,8 +20,8 @@ class TestHeaderArray(unittest.TestCase):
     _dd = os.path.join(os.path.dirname(__file__), "testdata", "")
 
     def test_is_valid(self): # Relies on external functions operating correctly...
-        hfo = HarFileObj.loadFromDisk(TestHeaderArray._dd + "test.har")
-        haos = hfo.getHeaderArrayObjs()
+        hfo = HarFileObj._loadFromDisk(TestHeaderArray._dd + "test.har")
+        haos = hfo._getHeaderArrayObjs()
         for hao in haos:
             self.assertTrue(hao.is_valid())
 
@@ -202,7 +202,7 @@ class TestHeaderArray(unittest.TestCase):
         self.assertTrue(np.allclose(hao.array, np.array([[1.0, 2.0], [3.0, 4.0]])))
 
     def test_getitem_setitem(self):
-        hfo = HarFileObj.loadFromDisk(TestHeaderArray._dd + "test.har")
+        hfo = HarFileObj._loadFromDisk(TestHeaderArray._dd + "test.har")
         nh01=hfo["NH01"]
 
         nh01[:,:]=np.array([[1.0, 2.0], [3.0, 4.0]])

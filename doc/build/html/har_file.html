@@ -9,7 +9,7 @@
     <title>HarPy API &#8212; HarPy 0.1 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
@@ -29,56 +29,51 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
+          
+
           <div class="body" role="main">
             
   <div class="section" id="harpy-api">
 <h1>HarPy API<a class="headerlink" href="#harpy-api" title="Permalink to this headline">¶</a></h1>
-<p>To read a header-array file (HAR) from disk, use the static method <code class="docutils literal notranslate"><span class="pre">loadFromDisk(filename)</span></code>. This will return an instance of  <code class="docutils literal notranslate"><span class="pre">harpy.HarFileObj()</span></code>, which is a subclass of <a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#dict" title="(in Python v3.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dict</span></code></a> (though all keys can be get/set as attributes).</p>
-<p>To write a HAR file to disk, first create an <code class="docutils literal notranslate"><span class="pre">harpy.HarFileObj()</span></code> object, and then execute the <code class="docutils literal notranslate"><span class="pre">writeToDisk()</span></code> method. Those methods, and other API methods, are shown below.</p>
+<p>To read a header-array file (HAR) from disk, the constructor <code class="docutils literal notranslate"><span class="pre">HarFileObj(filename)</span></code>. This will return an instance of  <code class="docutils literal notranslate"><span class="pre">harpy.HarFileObj()</span></code>.</p>
+<p>To write a HAR file to disk, first create an <code class="docutils literal notranslate"><span class="pre">harpy.HarFileObj()</span></code> object, and then execute the <code class="docutils literal notranslate"><span class="pre">writeToDisk()</span></code> method.</p>
 <dl class="class">
 <dt id="harpy.HarFileObj">
-<em class="property">class </em><code class="descclassname">harpy.</code><code class="descname">HarFileObj</code><span class="sig-paren">(</span><em>*args</em>, <em>filename: str = None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/harpy/har_file.html#HarFileObj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#harpy.HarFileObj" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">harpy.</code><code class="descname">HarFileObj</code><span class="sig-paren">(</span><em>filename: str = None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/harpy/har_file.html#HarFileObj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#harpy.HarFileObj" title="Permalink to this definition">¶</a></dt>
 <dd><p>HAR file object - essentially a memory representation of a HAR file.</p>
-<p><code class="docutils literal notranslate"><span class="pre">HarFileObj</span></code> subclasses <a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#dict" title="(in Python v3.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dict</span></code></a>, and stores a <a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#list" title="(in Python v3.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code></a> of <code class="docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code> in <code class="docutils literal notranslate"><span class="pre">self</span></code>. Each <code class="docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code> corresponds to a header-array. If <code class="docutils literal notranslate"><span class="pre">HarFileObj</span></code> is provided with <code class="docutils literal notranslate"><span class="pre">filename</span></code>, then the header-arrays in that file will be loaded - i.e. each <code class="docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code>  in <code class="docutils literal notranslate"><span class="pre">self</span></code> will correspond to a header-array in that file.</p>
-<p>Every key in a <code class="docutils literal notranslate"><span class="pre">HarFileObj</span></code> can be get and set as an attribute.</p>
+<dl class="docutils">
+<dt><code class="docutils literal notranslate"><span class="pre">HarFileObj</span></code>  stores a <a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#list" title="(in Python v3.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code></a> of <code class="docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code> in <code class="docutils literal notranslate"><span class="pre">self</span></code>.</dt>
+<dd>Each <code class="docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code> corresponds to a header-array.
+If <code class="docutils literal notranslate"><span class="pre">HarFileObj</span></code> is provided with <code class="docutils literal notranslate"><span class="pre">filename</span></code>, then the header-arrays in that file will be loaded - i.e. each <code class="docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code>  in <code class="docutils literal notranslate"><span class="pre">self</span></code> will correspond to a header-array in that file.</dd>
+</dl>
+<p>Access to the <code class="docutils literal notranslate"><span class="pre">HarFileObj</span></code>  is provided in a dict like style, __getitem__, __set_item__, __del_item__ and __contains__ are implemented. Each can take list arguments as well and returns result as list.
+Note that all methods are case insesitive with respect to names of Headers.</p>
+<p>Example: given file ex.har with Headers HD1 and HD2</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">harpy</span> <span class="k">import</span> <span class="n">HarFileObj</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">thisHar</span><span class="o">=</span><span class="n">HarFileObj</span><span class="p">(</span><span class="s2">&quot;ex.har&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">headersOnFile</span><span class="o">=</span> <span class="n">thisHar</span><span class="o">.</span><span class="n">getHeaderArrayNames</span><span class="p">()</span> <span class="c1"># [&quot;HD1&quot;,&quot;HD2&quot;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hd1Head</span><span class="o">=</span><span class="n">thisHar</span><span class="p">[</span><span class="s2">&quot;HD1&quot;</span><span class="p">]</span> <span class="c1"># obtain the HeaderArrayObj for HD1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">thisHar</span><span class="p">[</span><span class="s2">&quot;HD1&quot;</span><span class="p">]</span> <span class="c1"># remove HD1 from HarFile</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;HD1&quot;</span> <span class="ow">in</span> <span class="n">thisHar</span><span class="p">)</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">thisHAR</span><span class="o">.</span><span class="n">writeToDisk</span><span class="p">()</span> <span class="c1"># overwrites ex.har, now only contains HD2 as HD1 was deleted</span>
+</pre></div>
+</div>
 <p>The complete list of attributes is:</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>head_arrs</strong> (<a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#list" title="(in Python v3.4)"><em>list</em></a>) – Returned/provided as a <a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#list" title="(in Python v3.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code></a> of <code class="docutils literal notranslate"><span class="pre">HeaderArrayObj</span></code> defining all <code class="docutils literal notranslate"><span class="pre">HeaderArrayObj</span></code> associated with a file.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>head_arrs</strong> (<em>OrderedDict</em>) – Returned/provided as a <a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#list" title="(in Python v3.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code></a> of <code class="docutils literal notranslate"><span class="pre">HeaderArrayObj</span></code> defining all <code class="docutils literal notranslate"><span class="pre">HeaderArrayObj</span></code> associated with a file.</td>
 </tr>
 </tbody>
 </table>
+<p>:param HarFileInfoObj _hfi  : Basic info of the HAr file content. This is used in conjuction with head_arrs to permit on the fly reading of <code class="docutils literal notranslate"><span class="pre">HeaderArrayObj</span></code> and thus readuce the memory footprint.</p>
 <p>And the methods of <code class="docutils literal notranslate"><span class="pre">HarFileObj</span></code> are:</p>
-<dl class="method">
-<dt id="harpy.HarFileObj.addHeaderArrayObj">
-<code class="descname">addHeaderArrayObj</code><span class="sig-paren">(</span><em>ha_obj: harpy.header_array.HeaderArrayObj</em>, <em>idx: int = None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/harpy/har_file.html#HarFileObj.addHeaderArrayObj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#harpy.HarFileObj.addHeaderArrayObj" title="Permalink to this definition">¶</a></dt>
-<dd><table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>ha_obj</strong> – A <code class="xref py py-obj docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code> object.</li>
-<li><strong>idx</strong> – The index of <code class="docutils literal notranslate"><span class="pre">self[&quot;head_arrs&quot;]</span></code> at which to insert <code class="docutils literal notranslate"><span class="pre">ha_obj</span></code>.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="harpy.HarFileObj.addHeaderArrayObjs">
-<code class="descname">addHeaderArrayObjs</code><span class="sig-paren">(</span><em>ha_objs</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/harpy/har_file.html#HarFileObj.addHeaderArrayObjs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#harpy.HarFileObj.addHeaderArrayObjs" title="Permalink to this definition">¶</a></dt>
-<dd><table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ha_objs</strong> (<em>'Union</em><em>[</em><em>HeaderArrayObj</em><em>,</em><em>List</em><em>[</em><em>HeaderArrayObj</em><em>]</em><em>]</em><em>'</em>) – Add one or more <code class="xref py py-obj docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code> to <code class="docutils literal notranslate"><span class="pre">self</span></code>.</td>
-</tr>
-</tbody>
-</table>
+<dl class="exception">
+<dt id="harpy.HarFileObj.InvalidHeaderArrayName">
+<em class="property">exception </em><code class="descname">InvalidHeaderArrayName</code><a class="reference internal" href="_modules/harpy/har_file.html#HarFileObj.InvalidHeaderArrayName"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#harpy.HarFileObj.InvalidHeaderArrayName" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised if header array name is not exactly four (alphanumeric) characters long.</p>
 </dd></dl>
 
 <dl class="method">
@@ -89,53 +84,6 @@
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Returns the name of all <code class="docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj()</span></code> stored with <code class="docutils literal notranslate"><span class="pre">self</span></code>.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="harpy.HarFileObj.getHeaderArrayObj">
-<code class="descname">getHeaderArrayObj</code><span class="sig-paren">(</span><em>ha_name: str</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/harpy/har_file.html#HarFileObj.getHeaderArrayObj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#harpy.HarFileObj.getHeaderArrayObj" title="Permalink to this definition">¶</a></dt>
-<dd><p>Retrieve a single <code class="docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ha_name</strong> – The <code class="docutils literal notranslate"><span class="pre">&quot;name&quot;</span></code> of the <code class="docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code>.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A <code class="docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code>.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="harpy.HarFileObj.getHeaderArrayObjIdx">
-<code class="descname">getHeaderArrayObjIdx</code><span class="sig-paren">(</span><em>ha_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/harpy/har_file.html#HarFileObj.getHeaderArrayObjIdx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#harpy.HarFileObj.getHeaderArrayObjIdx" title="Permalink to this definition">¶</a></dt>
-<dd><table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ha_name</strong> – Name of Header Array.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return int:</th><td class="field-body">The <a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#list" title="(in Python v3.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code></a> index of the <code class="docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code>.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="harpy.HarFileObj.getHeaderArrayObjs">
-<code class="descname">getHeaderArrayObjs</code><span class="sig-paren">(</span><em>ha_names=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/harpy/har_file.html#HarFileObj.getHeaderArrayObjs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#harpy.HarFileObj.getHeaderArrayObjs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Retrieve a <a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#list" title="(in Python v3.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code></a> of <code class="xref py py-obj docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ha_names</strong> (<em>'Union</em><em>[</em><em>None</em><em>,</em><a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#str" title="(in Python v3.4)"><em>str</em></a><em>,</em><em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#str" title="(in Python v3.4)"><em>str</em></a><em>]</em><em>]</em><em>'</em>) – The name or <a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#list" title="(in Python v3.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code></a> of names of <code class="docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code>. If <a class="reference external" href="https://docs.python.org/3.4/library/constants.html#None" title="(in Python v3.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a> is provided (the default) then all <code class="docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code> are returned.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#list" title="(in Python v3.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code></a> of <code class="docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code>.</td>
 </tr>
 </tbody>
 </table>
@@ -154,57 +102,6 @@
 </table>
 </dd></dl>
 
-<dl class="staticmethod">
-<dt id="harpy.HarFileObj.loadFromDisk">
-<em class="property">static </em><code class="descname">loadFromDisk</code><span class="sig-paren">(</span><em>filename: str</em><span class="sig-paren">)</span> &#x2192; harpy.har_file.HarFileObj<a class="reference internal" href="_modules/harpy/har_file.html#HarFileObj.loadFromDisk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#harpy.HarFileObj.loadFromDisk" title="Permalink to this definition">¶</a></dt>
-<dd><p>Loads a HAR file into memory, returning a HarFileObj.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> – The name of the file to load.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="harpy.HarFileObj.readHeaderArrayObjs">
-<code class="descname">readHeaderArrayObjs</code><span class="sig-paren">(</span><em>filename: str</em>, <em>ha_names=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/harpy/har_file.html#HarFileObj.readHeaderArrayObjs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#harpy.HarFileObj.readHeaderArrayObjs" title="Permalink to this definition">¶</a></dt>
-<dd><blockquote>
-<div>Reads the header array objects with names <code class="docutils literal notranslate"><span class="pre">ha_names</span></code> from <code class="docutils literal notranslate"><span class="pre">filename</span></code>. If <a class="reference external" href="https://docs.python.org/3.4/library/constants.html#None" title="(in Python v3.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a> (the default), read all header array objects. <code class="xref py py-obj docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code> are stored in <code class="docutils literal notranslate"><span class="pre">self</span></code> and can be retrieved with the <code class="docutils literal notranslate"><span class="pre">self.getHeaderArrayObjs()</span></code> method.</div></blockquote>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#str" title="(in Python v3.4)"><em>str</em></a>) – </li>
-<li><strong>ha_names</strong> (<em>'Union</em><em>[</em><em>None</em><em>,</em><a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#str" title="(in Python v3.4)"><em>str</em></a><em>,</em><em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#str" title="(in Python v3.4)"><em>str</em></a><em>]</em><em>]</em><em>'</em>) – </li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3.4/library/constants.html#None" title="(in Python v3.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="harpy.HarFileObj.removeHeaderArrayObjs">
-<code class="descname">removeHeaderArrayObjs</code><span class="sig-paren">(</span><em>ha_names</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/harpy/har_file.html#HarFileObj.removeHeaderArrayObjs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#harpy.HarFileObj.removeHeaderArrayObjs" title="Permalink to this definition">¶</a></dt>
-<dd><table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ha_names</strong> (<em>'Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#str" title="(in Python v3.4)"><em>str</em></a><em>,</em><em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#str" title="(in Python v3.4)"><em>str</em></a><em>]</em><em>]</em><em>'</em>) – Remove one or more <code class="xref py py-obj docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code> from <code class="docutils literal notranslate"><span class="pre">self</span></code>.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
 <dl class="method">
 <dt id="harpy.HarFileObj.writeToDisk">
 <code class="descname">writeToDisk</code><span class="sig-paren">(</span><em>filename: str</em>, <em>ha_names=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/harpy/har_file.html#HarFileObj.writeToDisk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#harpy.HarFileObj.writeToDisk" title="Permalink to this definition">¶</a></dt>
@@ -214,7 +111,7 @@
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#str" title="(in Python v3.4)"><em>str</em></a>) – Writes <code class="xref py py-obj docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code> with <code class="docutils literal notranslate"><span class="pre">ha_names</span></code> to <code class="docutils literal notranslate"><span class="pre">filename</span></code>. If <code class="docutils literal notranslate"><span class="pre">ha_names</span></code> is None, write all the <code class="xref py py-obj docutils literal notranslate"><span class="pre">harpy.HeaderArrayObj</span></code> stored in <code class="docutils literal notranslate"><span class="pre">self</span></code>.</li>
-<li><strong>ha_names</strong> (<em>'Union</em><em>[</em><em>None</em><em>,</em><a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#str" title="(in Python v3.4)"><em>str</em></a><em>,</em><em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#str" title="(in Python v3.4)"><em>str</em></a><em>]</em><em>]</em><em>'</em>) – The names of the header arrays to write to <code class="docutils literal notranslate"><span class="pre">filename</span></code>.</li>
+<li><strong>ha_names</strong> (<em>'Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3.4/library/constants.html#None" title="(in Python v3.4)"><em>None</em></a><em>,</em><a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#str" title="(in Python v3.4)"><em>str</em></a><em>,</em><em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3.4/library/stdtypes.html#str" title="(in Python v3.4)"><em>str</em></a><em>]</em><em>]</em><em>'</em>) – The names of the header arrays to write to <code class="docutils literal notranslate"><span class="pre">filename</span></code>.</li>
 </ul>
 </td>
 </tr>
@@ -228,6 +125,7 @@
 
 
           </div>
+          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
@@ -266,8 +164,8 @@
       &copy;2018, GEMPACK Software.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.4</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
       |
       <a href="_sources/har_file.rst.txt"
