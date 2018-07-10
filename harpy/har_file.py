@@ -8,9 +8,13 @@ Created on Mar 12 09:53:27 2018
 .. codeauthor:: Lyle Collins <Lyle.Collins@csiro.au>
 """
 
-from .har_file_io import HarFileIO
+from .har_file_io import HarFileIO, HarFileInfoObj
 from .header_array import HeaderArrayObj
 from collections import OrderedDict
+from typing import TypeVar
+from os import path
+import warnings
+TypeHarFileObj = TypeVar('TypeHarFileObj', bound='HarFileObj')
 
 class HarFileObj(object):
     """
@@ -27,13 +31,14 @@ class HarFileObj(object):
     And the methods of ``HarFileObj`` are:
     """
 
-    def __init__(self, *args, filename: str=None, **kwargs):
-        super().__init__(*args, **kwargs)
-
+    def __init__(self, filename: str=None):
         self._head_arrs = OrderedDict()
 
         if isinstance(filename, str):
-            self = HarFileObj.loadFromDisk(filename)
+            if path.isfile(filename):
+                self._hfi = HarFileIO.readHarFileInfo(filename)
+            else:
+                self._hfi = HarFileInfoObj(file=filename)
 
     def __getitem__(self, item : 'Union[str, list[str]]' ):
         if isinstance(item,str):
@@ -85,14 +90,22 @@ class HarFileObj(object):
         """
         :return: Returns the name of all ``harpy.HeaderArrayObj()`` stored with ``self``.
         """
-        return self._head_arrs.keys()
+
+        if not self._hfi.is_valid():
+            warnings.warn("Har file "+self._hfi.filename+" has changed since last access, rereading information")
+            self=HarFileObj(self._hfi.file)
+
+        return self._hfi.getHeaderArrayNames()
 
     def getRealHeaderArrayNames(self):
         """
         :return: Returns only the names of arrays of type 2D or 7D - i.e. multi-dimensional header arrays of floating point numbers.
         """
 
-        return [key for key,val in self._head_arrs.items() if val.data_type in ["RE"]]
+        if not self._hfi.is_valid():
+            warnings.warn("Har file "+self._hfi.filename+" has changed since last access, rereading information")
+            self=HarFileObj(self._hfi.file)
+        return [key for key,val in self._hfi.items() if val.data_type in ["RE"]]
 
 
     def getHeaderArrayObj(self, ha_name: str):
@@ -103,13 +116,21 @@ class HarFileObj(object):
         :return: A ``harpy.HeaderArrayObj``.
         """
 
+        if not self._hfi.is_valid():
+            warnings.warn("Har file "+self._hfi.filename+" has changed since last access, rereading information")
+            self=HarFileObj(self._hfi.file)
+
         if not isinstance(ha_name, str):
             raise TypeError("'ha_name' must be a string.")
 
-        if not ha_name.strip().upper() in self._head_arrs:
-            raise ValueError("HeaderArrayObj '%s' does not exist in HarFileObj. A possible cause is that the HeaderArrayObj has not been read into memory." % (ha_name))
+        upname=ha_name.strip().upper()
+        if not upname in self._hfi:
+            raise KeyError("HeaderArrayObj '%s' does not exist in HarFileObj." % (ha_name))
+        if not upname in self._head_arrs:
+            hnames, haos=  HarFileIO.readHeaderArraysFromFile(self._hfi, ha_names=upname)
+            self._head_arrs[upname]=haos[0]
 
-        return self._head_arrs[ha_name.strip().upper()]
+        return self._head_arrs[upname]
 
     def getHeaderArrayObjs(self, ha_names=None):
         """
@@ -137,7 +158,7 @@ class HarFileObj(object):
         :param 'Union[None,str,List[str]]' ha_names:
         :return: `None`
         """
-        hnames, haos = HarFileIO.readHeaderArraysFromFile(filename=filename, ha_names=ha_names)
+        hnames, haos = HarFileIO.readHeaderArraysFromFile(self._hfi, ha_names=ha_names)
         self._head_arrs=OrderedDict(zip(hnames, haos))
 
 
@@ -165,10 +186,12 @@ class HarFileObj(object):
         if isinstance(ha_names, str):
             ha_names = [ha_names]
 
-        outlist=[]
+        outlist=self.getHeaderArrayObjs(ha_names)
+
         for ha_name in ha_names:
+            if ha_name.strip().upper() in self._hfi:
+                del self._hfi._ha_infos[ha_name.strip().upper()]
             if ha_name.strip().upper() in self._head_arrs:
-                outlist.append(self._head_arrs[ha_name.strip().upper()])
                 del self._head_arrs[ha_name.strip().upper()]
         return outlist
 
@@ -197,11 +220,12 @@ class HarFileObj(object):
         if len(hname.strip()) > 4:
             raise HarFileObj.InvalidHeaderArrayName("Name of Header too long")
 
+        self._hfi.addHAInfo(hname.strip().upper(),0,0)
         self._head_arrs[hname.strip().upper()]= ha_obj
 
 
     @staticmethod
-    def loadFromDisk(filename: str, ha_names: list = None) -> 'HarFileObj':
+    def loadFromDisk(filename: str, ha_names: list = None) -> TypeHarFileObj:
         """Loads a HAR file into memory, returning a HarFileObj.
 
         :param filename: The name of the file to load.
@@ -209,8 +233,8 @@ class HarFileObj(object):
         :return "HarFileObj": Returns ``HarFileObj`` with
         """
 
-        hfo = HarFileObj()
-        hfo.readHeaderArrayObjs(filename=filename, ha_names=ha_names)
+        hfo = HarFileObj(filename=filename)
+        hfo.readHeaderArrayObjs(hfo._hfi, ha_names=ha_names)
 
         return hfo
 

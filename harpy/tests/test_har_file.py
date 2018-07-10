@@ -49,16 +49,15 @@ class TestHarFileObj(unittest.TestCase):
     def test_overwrite_header(self):
         shutil.copy2(TestHarFileObj._dd + "test.har", "test_overwrite_header.har")
 
-        hfo = HarFileObj.loadFromDisk("test_overwrite_header.har")  # Must check loadFromDisk passes test to rely on results from this method
+        hfo = HarFileObj("test_overwrite_header.har")  # Must check loadFromDisk passes test to rely on results from this method
 
         hao = hfo.getHeaderArrayObjs(["ARR7"])[0]
         hao.array[0,0,0,0,0,0,0] = 42.0
 
         hfo.writeToDisk("test_overwrite_header.har")
 
-        hfo = HarFileObj.loadFromDisk("test_overwrite_header.har")
-        header_names = hfo.getHeaderArrayNames()
-        # header_names = hfo["hfio"].getHeaderArrayNames()
+        with self.assertWarns(UserWarning):
+            header_names = hfo.getHeaderArrayNames()
         test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'INTA', 'SIMP', 'SIM2', 'NH01', 'ARR7']
         self.assertTrue(all([x == y for (x, y) in zip(header_names, test_hn)]))
 
@@ -75,7 +74,6 @@ class TestHarFileObj(unittest.TestCase):
 
         hn = hfo.getHeaderArrayNames()
         test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'SIMP', 'SIM2', 'NH01', 'ARR7']
-
         self.assertTrue(all([x == y for (x, y) in zip(hn, test_hn)]))
 
         hfo.addHeaderArrayObjs("INTA", hao)
@@ -121,7 +119,7 @@ class TestHarFileObj(unittest.TestCase):
             self.assertTrue(hfo[id] == HeadList[i])
 
         # Test bad request
-        with self.assertRaises(ValueError):
+        with self.assertRaises(KeyError):
             HeadList = hfo["NOTH"]
         with self.assertRaises(TypeError):
             HeadList = hfo[1]

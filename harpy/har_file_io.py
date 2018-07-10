@@ -58,17 +58,24 @@ class HarFileInfoObj(object):
             self._ha_infos = OrderedDict()
 
 
+
     def addHAInfo(self, name, pos_name, pos_data):
         name=name.strip().upper()
         self._ha_infos[name] = HarFileInfoObj._HAInfo(name, pos_name, pos_data, parent_har_file=self)
 
 
     def getHeaderArrayNames(self):
-        return self._ha_infos.keys()
+        return list(self._ha_infos.keys())
+
+    def items(self):
+        return self._ha_infos.items()
+
+    def __contains__(self, item):
+        return item in self._ha_infos
 
     @property
     def file(self):
-        return self._file
+        return self.filename
 
     @file.setter
     def file(self, obj):
@@ -93,9 +100,10 @@ class HarFileInfoObj(object):
         return self._ha_infos[ha_name.strip().upper()]
 
     def is_valid(self):
-        valid=os.path.isfile(self.filename)
-        if valid:
-            valid= self._mtime == os.path.getmtime(self.filename)
+        if not os.path.isfile(self.filename):
+            raise FileNotFoundError("HAR file "+self.filename+" does not exist")
+        valid= self._mtime == os.path.getmtime(self.filename)
+        self._mtime = os.path.getmtime(self.filename)
         return valid
 
 
@@ -141,7 +149,7 @@ class HarFileIO(object):
         self._HeaderPos = OrderedDict()
 
     @staticmethod
-    def readHarFileInfo(filename: str) -> 'HarFileInfoObj':
+    def readHarFileInfo(filename: str) -> HarFileInfoObj:
         """
         :param filename: Filename.
         :return: An `dict`, with the key-value pairs:
@@ -157,6 +165,7 @@ class HarFileIO(object):
                 if not name:
                     break
                 hfi.addHAInfo(name, pos, end_pos)
+                (hfi.version, hfi.data_type, hfi.storage_type,  hfi.long_name, hfi.file_dims) = HarFileIO._getHeaderInfo(f, name)
 
         return hfi
 
@@ -187,9 +196,7 @@ class HarFileIO(object):
         return Hpos, fb(data), fp.tell()
 
     @staticmethod
-    def readHeaderArraysFromFile(filename: str, ha_names: 'Union[None, str, List[str]]' = None, readData=False):
-
-        hfi = HarFileIO.readHarFileInfo(filename)
+    def readHeaderArraysFromFile(hfi: HarFileInfoObj, ha_names: 'Union[None, str, List[str]]' = None, readData=False):
 
         if ha_names is None:
             ha_names = hfi.getHeaderArrayNames()
@@ -225,11 +232,7 @@ class HarFileIO(object):
 
             fp.seek(ha_info.pos_data)
 
-            (ha_info.version,
-             ha_info.data_type,
-             ha_info.storage_type,
-             ha_info.long_name,
-             ha_info.file_dims) = HarFileIO._getHeaderInfo(fp, header_name)
+            (ha_info.version, ha_info.data_type, ha_info.storage_type,  ha_info.long_name, ha_info.file_dims) = HarFileIO._getHeaderInfo(fp, header_name)
 
             # # readHeader methods alter self._DataObj, self.RealDim, self.DataDimension, self.StorageType possibly self.f
             if ha_info.version == 1:
@@ -239,9 +242,6 @@ class HarFileIO(object):
                     setList = [_HeaderSet(name=None, status='n', dim_desc=None, dim_size=ha_info.file_dims[idim]) for
                                         idim in range(0, 1)]
                     ha_info.sets = _HeaderDims(setList)
-                    # if ha_info["long_name"].lower().startswith('set '):
-                    #     ha_info["header_type"] = "set"
-                    #     ha_info["_setNames"] = [ha_info["long_name"].split()[1]]
                 elif ha_info.data_type == 'RE':
                     ha_info.has_elements = True
                     ha_info.array = HarFileIO._readREArray(fp, ha_info, file_dims=ha_info.file_dims)
