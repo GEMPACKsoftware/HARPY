@@ -6,9 +6,9 @@ Created on Mar 14 13:05:03 2018
 """
 import unittest
 
-from harpy.tests.test_har_file import TestHarFileObj
-from harpy.tests.test_har_file_io import TestHarFileIO
-from harpy.tests.test_header_array import TestHeaderArray
+from .test_har_file import TestHarFileObj
+from .test_har_file_io import TestHarFileIO
+from .test_header_array import TestHeaderArray
 
 class TestHarpy(unittest.TestSuite):
     """TestConCERO is a unittest.TestSuite, which provides an easy access point to run all the tests.

@@ -8,15 +8,15 @@ import struct
 import sys
 import os
 import math
-
+from typing import List,Union,BinaryIO
 import numpy as np
 
-import harpy.header_array as header
-from harpy._header_sets import _HeaderSet, _HeaderDims
+from .header_array import HeaderArrayObj
+from ._header_sets import _HeaderSet, _HeaderDims
 
 # compatibility function for python 2.7/3.x
 if sys.version_info < (3,):
-    as_unicode = False
+    is_unicode = False
     def tb(x):
         return x
 
@@ -24,7 +24,7 @@ if sys.version_info < (3,):
         return x
 else:
     import codecs
-    as_unicode = True
+    is_unicode = True
 
     def tb(x):
         if not x: return x
@@ -34,7 +34,6 @@ else:
             return x
 
     def fb(x):
-        # type: str -> str
         if not x: return x
         return x.decode('utf-8')
 
@@ -43,11 +42,6 @@ class HarFileInfoObj(object):
     def __init__(self, file: str=None, ha_infos: 'List[dict]'=None):
         """
         :param str file: The absolute path to the file.
-        :param str head_arrs: A `list` of `dict`. Each `dict` object itself \
-            contains the key-value pairs:
-            :param "name": The name of the header-array.
-            :param "pos_name": maps to an `int` that gives the byte-position of the header data.
-            :param "pos_data": maps to an `int` that gives the byte-position of the array data.
         """
         self.filename = os.path.abspath(file)
         if os.path.isfile(self.filename):
@@ -122,13 +116,6 @@ class HarFileInfoObj(object):
             self.sets      = None
             self.coeff_name = None
 
-        @property
-        def sets(self):
-            return getattr(self, "_sets", None)
-
-        @sets.setter
-        def sets(self, obj):
-            self._sets = obj
 
 
 class HarFileIO(object):
@@ -137,11 +124,9 @@ class HarFileIO(object):
     SupStorageTypes = ['FULL', 'SPSE'] # Supported storage types
     MaxDimVersion = [0, 7, 0, 14] # Maximum dimensions for each version???
 
-    def __init__(self, filename):
-        # type: (str) -> HAR_IO
+    def __init__(self):
         """
-        :arg (str) fname: Name of file to open.
-        :rtype: HAR_IO
+        :rtype: HarFileIO
         """
 
         self._HeaderPos = OrderedDict()
@@ -168,7 +153,7 @@ class HarFileIO(object):
         return hfi
 
     @staticmethod
-    def _readHeaderPosName(fp: io.BufferedReader):
+    def _readHeaderPosName(fp: BinaryIO):
         """
         Identifies position of header name and name itself.
 
@@ -210,11 +195,11 @@ class HarFileIO(object):
 
 
     @staticmethod
-    def readHeader(hfi: 'HarFileInfoObj', header_name: str, *args, **kwargs):
+    def readHeader(hfi: 'HarFileInfoObj', header_name: str):
         """
 
         :param hfi: HarFileMemObj with file information.
-        :param header_name: The name of the header.
+        :param header_name: The name of the 
         :return: Header object with data.
         """
 
@@ -261,22 +246,22 @@ class HarFileIO(object):
                                                                storage_type=ha_info.storage_type)
 
                 else:
-                    raise ValueError("Data type '%s' is unsupported." % (ha_info.data_type))
+                    raise ValueError("Data type '%s' is unsupported." % ha_info.data_type)
             else:
                 raise RuntimeError("Unsupported/unrecognised HAR header version.")
 
-        return header.HeaderArrayObj.HeaderArrayFromData(coeff_name=ha_info.coeff_name,
+        return HeaderArrayObj.HeaderArrayFromCompiledData(coeff_name=ha_info.coeff_name,
                                      long_name=ha_info.long_name,
                                      array=ha_info.array,
-                                     sets=ha_info.sets)
+                                     SetDims=ha_info.sets)
 
     @staticmethod
-    def _read1CArray(fp, file_dims=None, as_unicode: bool = as_unicode, ):
+    def _read1CArray(fp, file_dims=None, use_unicode: bool = is_unicode, ):
         array = HarFileIO._readCharVec(fp,
                                        itemsize=file_dims[1],
                                        dtype="<U12",
                                        size=(file_dims[0],),
-                                       as_unicode=as_unicode)
+                                       use_unicode=use_unicode)
 
         return np.ascontiguousarray(array)
 
@@ -298,7 +283,6 @@ class HarFileIO(object):
         # Note that 'order' refers to Fortran vs C (i.e. has nothing to do with floats or ints)
         array = np.ndarray(shape=file_dims[0:2], dtype=data_type, order='F')
 
-        nrec = 50
         arraySize = array.size
         nread = 0
         while nread != arraySize:
@@ -329,7 +313,7 @@ class HarFileIO(object):
         return array
 
     @staticmethod
-    def _readREArray(fp: io.BufferedReader, header_info: HarFileInfoObj._HAInfo, file_dims: tuple = None, hasSets=True):
+    def _readREArray(fp: BinaryIO, header_info: HarFileInfoObj._HAInfo, file_dims: tuple = None, hasSets=True):
         """
 
         :param fp:
@@ -359,7 +343,7 @@ class HarFileIO(object):
 
 
     @staticmethod
-    def _getHeaderInfo(fp: io.BufferedReader, name):
+    def _getHeaderInfo(fp: BinaryIO, name):
 
         nbyte = HarFileIO._getEntrySize(fp)
 
@@ -373,11 +357,8 @@ class HarFileIO(object):
             Version = 1
             DataType = fb(Record[1])
         else:
-            Version = int(Record[1])
-
-            if Version > 3:
-                raise RuntimeError('Header "' + name + '" is HAR Version ' + fb(Record[1]) +
-                                " format which cannot not be read.\nPlease check for updates of The HARpy module")
+            raise RuntimeError('Header "' + name + '" is HAR Version ' + fb(Record[1]) +
+                            " format which cannot not be read.\nPlease check for updates of The HARpy module")
 
         StorageType = fb(Record[2])
         if not StorageType in HarFileIO.SupStorageTypes:
@@ -397,18 +378,18 @@ class HarFileIO(object):
         return Version, DataType, StorageType, LongName, Sizes
 
     @staticmethod
-    def _readCharVec(fp: io.BufferedReader, itemsize:int=None, dtype=None, size:tuple=None, as_unicode=as_unicode):
+    def _readCharVec(fp: BinaryIO, itemsize:int=None, dtype=None, size:tuple=None, use_unicode=is_unicode):
         """
 
         :param fp:
         :param itemsize:
         :param dtype:
         :param size:
-        :param as_unicode:
+        :param is_unicode:
         :return:
         """
 
-        array = np.chararray(size, itemsize=itemsize, unicode=as_unicode)
+        array = np.chararray(size, itemsize=itemsize, unicode=use_unicode)
         Clen = array.itemsize
 
         if "<U" in str(dtype):
@@ -497,12 +478,11 @@ class HarFileIO(object):
         return array
 
     @staticmethod
-    def _readRESparseObj(fp:io.BufferedReader, array: np.ndarray, dtype):
+    def _readRESparseObj(fp:BinaryIO, array: np.ndarray, dtype):
         nbyte = HarFileIO._getEntrySize(fp)
         dataForm = '=4siii80s'
         nrec = 50
         V = HarFileIO._unpack_data(fp, dataForm)
-        NNonZero = V[1]
         if V[2] != 4:
             raise ValueError("Can only read integer 4 in read7DSparse7D ")
         if V[3] != 4:
@@ -581,9 +561,9 @@ class HarFileIO(object):
         return Coefficient, SetNames, SetStatus, ElementList
 
     @staticmethod
-    def _readSets(fp: io.BufferedReader, file_dims=None) -> dict:
+    def _readSets(fp: BinaryIO, file_dims=None) -> (str,_HeaderDims):
         """
-        :param fp: io.BufferedReader object.
+        :param fp: BinaryIO object.
         :return tuple: (coefficient_name, header_sets)
         """
         Coefficient, SetList, SetStatus, ElementList = HarFileIO._readSetElementInfoRecord(fp)
@@ -596,7 +576,7 @@ class HarFileIO(object):
         for name, status in zip(set_names, SetStatus):
             if status == 'k':
                 if name not in processedSet:
-                    processedSet[name] = HarFileIO._readCharVec(fp, itemsize=12, as_unicode=as_unicode, size=tuple([file_dims[idim]]), dtype="<U12")
+                    processedSet[name] = HarFileIO._readCharVec(fp, itemsize=12, use_unicode=is_unicode, size=tuple([file_dims[idim]]), dtype="<U12")
                 header_sets.append(_HeaderSet(name=name, status=status, dim_desc=[item.strip() for item in processedSet[name]], dim_size= file_dims[idim]))
             elif status == 'u':
                 header_sets.append(_HeaderSet(name=name, status=status, dim_desc=None, dim_size= file_dims[idim]))
@@ -620,12 +600,7 @@ class HarFileIO(object):
         return struct.unpack(form, data[0:struct.calcsize(form)])
 
     @staticmethod
-    def _pass(fp: io.BufferedReader, no_bytes: int):
-        data = fp.read(no_bytes)
-        return
-
-    @staticmethod
-    def _getEntrySize(fp: io.BufferedReader) -> int:
+    def _getEntrySize(fp: BinaryIO) -> Union[int,None]:
         """
         Reads 4 bytes (corresponds to the size of the entry).
         :param fp: Read directly from ``fp``.
@@ -645,21 +620,14 @@ class HarFileIO(object):
 
     @staticmethod
     def writeHeaders(filename: 'Union[str, io.BufferedWriter]', hnames : 'List[str]',
-                     head_arr_objs: 'Union[header.HeaderArrayObj, List[header.HeaderArrayObj]]'):
-        """
-        :param filename: name of file to write into.
-        # :param fp: file object to write into.
-        :param header_name: Name of header. Must be precisely four characters.
-        :param header_longname: Long name. Must be precisely 70 characters.
-        :param header_array: A `numpy.ndarray` object of the data.
-        :return:
-        """
-        if isinstance(head_arr_objs, header.HeaderArrayObj):
+                     head_arr_objs: 'Union[HeaderArrayObj, List[HeaderArrayObj]]'):
+
+        if isinstance(head_arr_objs, HeaderArrayObj):
             head_arr_objs = [head_arr_objs]
 
         for head_arr_obj in head_arr_objs:
-            if not isinstance(head_arr_obj, header.HeaderArrayObj):
-                raise TypeError("All 'head_arr_objs' must be of header.HeaderArrayObj type.")
+            if not isinstance(head_arr_obj, HeaderArrayObj):
+                raise TypeError("All 'head_arr_objs' must be of HeaderArrayObj type.")
             head_arr_obj.is_valid()
 
         if isinstance(filename, str):
@@ -678,26 +646,27 @@ class HarFileIO(object):
                     HarFileIO._writeHeader2D(fp, hname, head_arr_obj)
                 elif '<U' in header_type_str or '|S' in header_type_str:
                     if head_arr_obj.array.ndim > 1:
-                        print('"' + head_arr_obj.name + '" can not be written as character arrays ndim>1 are not yet supported')
+                        print('"' + hname + '" can not be written as character arrays ndim>1 are not yet supported')
                         return
                     HarFileIO._writeHeader1C(fp, hname, head_arr_obj)
                 else:
                     raise TypeError('Can not write data in Header: "' +
-                                    head_arr_obj.name + '" as data style does not match any known Header type')
+                                    hname + '" as data style does not match any known Header type')
                 fp.flush()
 
     @staticmethod
-    def _writeHeader(fp: io.BufferedReader, hname : str, head_arr_obj: header.HeaderArrayObj):
+    def _writeHeader(fp: BinaryIO, hname : str, head_arr_obj: HeaderArrayObj):
 
         head_arr_obj.storage_type = 'FULL'
 
         header_type_str = str(head_arr_obj.array.dtype)
+        type_char=""
         if header_type_str == "float32":
             type_char = 'f'
+            max_dim = 7
             if head_arr_obj.array.ndim > 2:
                 if (float(np.count_nonzero(head_arr_obj.array)) / head_arr_obj.array.size) <= 0.4:
                     head_arr_obj.storage_type = 'SPSE'
-                max_dim = 7
                 if head_arr_obj.sets.defined():
                     head_arr_obj.data_type = "RE"
                 else:
@@ -711,11 +680,11 @@ class HarFileIO(object):
             head_arr_obj.data_type = "2I"
         elif '<U' in header_type_str or '|S' in header_type_str:
             if head_arr_obj.array.ndim > 1:
-                raise ValueError("'%s' can not be written as character arrays with more than 1 dimension are not yet supported." % head_arr_obj.name)
+                raise ValueError("'%s' can not be written as character arrays with more than 1 dimension are not yet supported." % hname)
             max_dim = 2 # Yes, seems a bit counter-intuitive I know
             head_arr_obj.data_type = "1C"
         else:
-            raise TypeError("Can not write data in '%s' as array does not match any known type." % head_arr_obj.name)
+            raise TypeError("Can not write data in '%s' as array does not match any known type." % hname)
 
         secRecList = ['    ', head_arr_obj.data_type, head_arr_obj.storage_type, head_arr_obj.long_name, max_dim]
         ext = [head_arr_obj.array.shape[i] if i < head_arr_obj.array.ndim else 1 for i in range(max_dim)]
@@ -723,23 +692,23 @@ class HarFileIO(object):
             ext = [head_arr_obj.array.size, int(header_type_str[2:])]
         secRecList = secRecList + ext
 
-        HarFileIO._writeHeaderName(fp, head_arr_obj.name)
+        HarFileIO._writeHeaderName(fp, hname)
         HarFileIO._writeSecondRecord(fp, secRecList)
 
         if head_arr_obj.data_type in ["RE", "RL"]:
             if head_arr_obj.storage_type == 'FULL':
-                HarFileIO._write7DFullArray(fp, hname, np.asfortranarray(head_arr_obj.array), type_char)
+                HarFileIO._write7DFullArray(fp, np.asfortranarray(head_arr_obj.array), type_char)
             else:
-                HarFileIO._write7DSparseArray(fp, hname,  np.asfortranarray(head_arr_obj.array), type_char)
+                HarFileIO._write7DSparseArray(fp, np.asfortranarray(head_arr_obj.array), type_char)
         elif head_arr_obj.data_type in ["2I", "2R"]:
-            HarFileIO._write2DArray(fp, hname, np.asfortranarray(head_arr_obj.array), type_char)
+            HarFileIO._write2DArray(fp, np.asfortranarray(head_arr_obj.array), type_char)
         elif head_arr_obj.data_type in ["1C"]:
-            HarFileIO._write1CArray(fp, hname, np.asfortranarray(head_arr_obj.array), head_arr_obj.array.size, int(header_type_str[2:]))
+            HarFileIO._write1CArray(fp, np.asfortranarray(head_arr_obj.array), head_arr_obj.array.size,12)
         else:
             raise ValueError("Unknown 'data_type' for this HeaderArrayObj.")
 
     @staticmethod
-    def _writeHeader7D(fp: io.BufferedReader, hname : str, head_arr_obj: header.HeaderArrayObj):
+    def _writeHeader7D(fp: BinaryIO, hname : str, head_arr_obj: HeaderArrayObj):
         hasElements = head_arr_obj.sets.defined()
         dataFill = float(np.count_nonzero(head_arr_obj.array)) / head_arr_obj.array.size
 
@@ -768,7 +737,7 @@ class HarFileIO(object):
             HarFileIO._write7DSparseArray(fp, np.asfortranarray(head_arr_obj.array), 'f')
 
     @staticmethod
-    def _writeHeader2D(fp: io.BufferedReader, hname : str, head_arr_obj: header.HeaderArrayObj):
+    def _writeHeader2D(fp: BinaryIO, hname : str, head_arr_obj: HeaderArrayObj):
         HarFileIO._writeHeaderName(fp, hname)
         typeString = str(head_arr_obj.array.dtype)
         shape2D = [head_arr_obj.array.shape[i] if i < head_arr_obj.array.ndim else 1 for i in range(0, 2)]
@@ -778,13 +747,15 @@ class HarFileIO(object):
         elif typeString == 'float32':
             secRecList = ['    ', '2R', 'FULL', head_arr_obj.long_name, 2]
             dtype = 'f'
+        else:
+            raise TypeError("Can only write 32bit float or int to 2D arrays")
         secRecList.extend(shape2D)
 
         HarFileIO._writeSecondRecord(fp, secRecList)
         HarFileIO._write2DArray(fp, np.asfortranarray(head_arr_obj.array), dtype)
 
     @staticmethod
-    def _writeHeader1C(fp: io.BufferedReader, hname : str, head_arr_obj: header.HeaderArrayObj):
+    def _writeHeader1C(fp: BinaryIO, hname : str, head_arr_obj: HeaderArrayObj):
 
         HarFileIO._writeHeaderName(fp, hname)
         typeString = str(head_arr_obj.array.dtype)
@@ -794,7 +765,7 @@ class HarFileIO(object):
         HarFileIO._write1CArray(fp, np.asfortranarray(head_arr_obj.array), head_arr_obj.array.size, no_chars)
 
     @staticmethod
-    def _writeHeaderName(fp: io.BufferedReader, name: str):
+    def _writeHeaderName(fp: BinaryIO, name: str):
 
         if len(name) != 4:
             raise ValueError('Header name ' + name + ' is not 4 characters long. Header array not written to file.')
@@ -804,18 +775,18 @@ class HarFileIO(object):
         fp.write(packed)
 
     @staticmethod
-    def _writeSecondRecord(fp: io.BufferedReader, List):
-        nint = len(List) - 4
+    def _writeSecondRecord(fp: BinaryIO, inList):
+        nint = len(inList) - 4
 
-        if len(List[3]) != 70:
-            raise ValueError("'long_name' must be precisely 70 characters long. 'long_name' is: %s (%d characters long)." % (List[3], len(List[3])))
+        if len(inList[3]) != 70:
+            raise ValueError("'long_name' must be precisely 70 characters long. 'long_name' is: %s (%d characters long)." % (inList[3], len(inList[3])))
 
-        List = [tb(x) if isinstance(x, str) else x for x in List]
+        inList = [tb(x) if isinstance(x, str) else x for x in inList]
         dataForm = '=i4s2s4s70s' + 'i' * nint + 'i' # For reading it is "=4s2s4s70si"
         byteLen = struct.calcsize(dataForm) - 8
-        List.append(byteLen)
-        List.insert(0, byteLen)
-        packed = struct.pack(dataForm, *List)
+        inList.append(byteLen)
+        inList.insert(0, byteLen)
+        packed = struct.pack(dataForm, *inList)
         fp.write(packed)
 
     @staticmethod
@@ -836,7 +807,7 @@ class HarFileIO(object):
         nWritten=0
         for StEnd in StEndList:
             nrec = nrec - 1
-            st = StEnd[0];
+            st = StEnd[0]
             end = StEnd[1]
 
             PosList = [[st[i] + 1, end[i]][ind] if i < array.ndim else [1, 1][ind] for i in range(0, 7) for ind in
@@ -870,8 +841,6 @@ class HarFileIO(object):
         maxData = 3996
         nrec = (NNonZero - 1) // maxData + 1
         ndata = 0
-        valList = []
-        indexList = []
 
         if NNonZero == 0:
             fp.write(struct.pack('=i4siiii', 16, tb('    '), 1, 0, 0, 16))
@@ -901,6 +870,8 @@ class HarFileIO(object):
         maxData = 7991
         nrec = (array.size - 1) // maxData + 1
         ndata = 0
+        indexTuple=(None,)
+        nbyte=0
         for st, end in HarFileIO._slice_inds(array, maxData):
             if array.ndim == 1:
                 indexTuple = (slice(st[0], end[0]))
@@ -920,7 +891,7 @@ class HarFileIO(object):
             nrec = nrec - 1
 
     @staticmethod
-    def _write1CArray(fp, array, vecDim, strLen):
+    def _write1CArray(fp : BinaryIO, array : np.array, vecDim : int, strLen : int):
         maxwrt = 29996
         maxPerLine = maxwrt // strLen
         nrec = (vecDim - 1) // maxPerLine + 1
@@ -953,11 +924,11 @@ class HarFileIO(object):
         fp.write(struct.pack('=i', nbyte))
 
     @staticmethod
-    def _writeSetElInfo(fp, header_arr_obj: header.HeaderArrayObj):
+    def _writeSetElInfo(fp, header_arr_obj: HeaderArrayObj):
 
-        sets = [set.name for set in header_arr_obj.sets.dims]
-        indexTypes = [set.status for set in header_arr_obj.sets.dims]
-        Elements = [set.dim_desc for set in header_arr_obj.sets.dims]
+        sets = [setDim.name for setDim in header_arr_obj.sets.dims]
+        indexTypes = [setDim.status for setDim in header_arr_obj.sets.dims]
+        Elements = [setDim.dim_desc for setDim in header_arr_obj.sets.dims]
 
         CName = header_arr_obj.coeff_name
         tmp = {}
@@ -996,7 +967,7 @@ class HarFileIO(object):
         writeList = [nbyte, tb('    '), nToWrite, 1, nSets, tb(CName.ljust(12)), 1]
         if nSets > 0:
             writeList.append(SetStr + statusStr)
-            writeList.extend([0 for i in Elements])
+            writeList.extend([0]*len(Elements) )
 
         writeList.append(nElement)
         if nElement > 0: writeList.append(ElementStr)
@@ -1026,7 +997,7 @@ class HarFileIO(object):
         end_index = [0 if i == inc_dim else 1 for i in range(0, ndim)]
         end_index[0:inc_dim] = a.shape[0:inc_dim]
 
-        start_index = [0 for i in range(0, ndim)]
+        start_index = [0] * ndim
 
         for i in range(0, tot_iter):
             if end_index[inc_dim] == a.shape[inc_dim]:
