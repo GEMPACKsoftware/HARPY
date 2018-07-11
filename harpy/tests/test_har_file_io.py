@@ -8,11 +8,9 @@ Created on Mar 02 11:17:41 2018
 import os
 import unittest
 import shutil
-import sys
-
 import numpy as np
 
-from harpy.har_file_io import HarFileIO
+from ..har_file_io import HarFileIO
 
 # print(sys.path)
 # sys.path.insert(0, "/opt/anaconda3/lib/python3.5/site-packages")

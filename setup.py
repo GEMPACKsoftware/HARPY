@@ -23,7 +23,7 @@ setup(
     license='GPLv3',
     python_requires=">=3.4",
     install_requires=['numpy'],
-    author="Lyle Collins",
-    author_email='Lyle.Collins@csiro.au',
+    author="Florian Schiffmann, Lyle Collins",
+    author_email='florian.schiffmann@vu.edu.au, Lyle.Collins@csiro.au',
     package_data={'harpy': test_files},
 )

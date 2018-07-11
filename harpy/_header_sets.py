@@ -1,14 +1,12 @@
 """
 Created on Jun 29 14:46:48 2018
 
-.. sectionauthor:: Lyle Collins <Lyle.Collins@csiro.au>
-.. codeauthor:: Lyle Collins <Lyle.Collins@csiro.au>
 """
 
 import numpy as np
-from typing import List
+from typing import List, Union
 
-class _HeaderSet():
+class _HeaderSet:
     """
     This class is used to represent sets associated with header arrays.
     """
@@ -17,14 +15,17 @@ class _HeaderSet():
     _valid_status = ["u", "e", "k", "n"]
     _genSetID     = 0
 
-    def __init__(self, name: str,
+    def __init__(self, name: 'Union[str,None]',
                  status: str,
-                 dim_desc: str,
-                 dim_size):
+                 dim_desc: 'Union[List[str],str,None]',
+                 dim_size: int):
 
         self.name = name
         self.status = status
         self.dim_desc = dim_desc
+        if not dim_desc is None:
+            if any([len(el) > 12 for el in dim_desc]):
+                raise ValueError("Set Element too long (maximum 12 Characters for set Elements)")
         self.elemPosDict={} if self.dim_desc is None else dict(zip( [elem.strip().lower() for elem in dim_desc], range(0,len(self.dim_desc))))
         self.dim_size = dim_size
 
@@ -48,7 +49,7 @@ class _HeaderSet():
                     npIndList.append(idx)
                     if useElem: setElList.append(self.dim_desc[idx])
                 elif isinstance(ind,slice):
-                    newslice = self.converSlice(ind)
+                    newslice = self.convertSlice(ind)
                     npIndList.append(list(range(self.dim_size))[newslice])
                     if useElem: setElList.extend(self.dim_desc[newslice])
                 else:
@@ -92,7 +93,7 @@ class _HeaderSet():
         return "S@"+str(self._genSetID)
 
 
-class _HeaderDims():
+class _HeaderDims:
 
     def __init__(self, setList):
         self._dims=setList
@@ -102,6 +103,17 @@ class _HeaderDims():
         setList=[_HeaderSet(None, 'n', None, dim) for dim in shape]
         return _HeaderDims(setList)
 
+    @staticmethod
+    def fromSetShape(sets, setElDict, shape):
+        setObjList=[]
+        lowerDict=dict(zip([key.strip().lower() for key in setElDict.keys()], setElDict.keys() ))
+        for idim, setName in enumerate(sets):
+            lowSet=setName.strip().lower()
+            if lowSet in lowerDict:
+                setObjList.append(_HeaderSet(setName,'k',setElDict[lowerDict[lowSet]],shape[idim]))
+            else:
+                setObjList.append(_HeaderSet(setName, 'u', None, shape[idim]))
+
 
     @property
     def dims(self) -> List[_HeaderSet]:
@@ -109,7 +121,7 @@ class _HeaderDims():
 
     @dims.setter
     def dims(self, obj) -> None:
-        self._version = obj
+        self._dims = obj
 
     def ndim(self):
         """
@@ -137,22 +149,22 @@ class _HeaderDims():
 
     def __str__(self):
         outputstr=""
-        for set in self._dims:
-            if set.status in "keu":
-                outputstr+="   "+set.name.ljust(12)+": \n"
+        for setDim in self._dims:
+            if setDim.status in "keu":
+                outputstr+="   " + setDim.name.ljust(12) + ": \n"
             else:
                 outputstr+="   "+"Not Specified"
-            if set.status in "ke":
-                outputstr+="      "+", ".join(set.dim_desc)+"\n"
+            if setDim.status in "ke":
+                outputstr+="      " +", ".join(setDim.dim_desc) + "\n"
         return outputstr
 
 
 
     def compatible_shape(self,other):
-        return self.shape() == other
+        return self.shape == other
 
-    def matchSets(self,sets=None, shape=None):
-        if not (sets is None or shape is None) : raise KeyError("Only one argument allowed")
+    def matchSets(self,sets=None, shape:tuple=None):
+        if sets is None and shape is None : raise KeyError("Only one argument allowed")
         newSets = []
         if not sets is None:
             # Try to match the shape of the dimensions
@@ -170,18 +182,20 @@ class _HeaderDims():
                     else:
                         newSets.append(sets.dims[jset])
                     iset-= 1 ; jset -=1
-        else:
+        elif not shape is None:
             iset = len(self.dims) - 1; jset=len(shape)-1
             while iset >=0 and jset >=0:
                 if jset < 0 :
                     newSets.append(self.dims[iset])
                     iset -=1
                 elif iset < 0 :
-                    newSets.append(newSet=_HeaderSet(None , 'n' , None, shape[jset]))
+                    newSets.append(_HeaderSet(None , 'n' , None, shape[jset]))
                     jset -=1
                 if self.dims[iset].dim_size == shape[jset] or self.dims[iset].dim_size == 1 or shape[jset] == 1:
                     newSets.append(self.dims[iset])
                     iset-= 1 ; jset -=1
+        else:
+            return KeyError("Either sets o shape have to be defined")
 
         return _HeaderDims(newSets)
 
@@ -215,18 +229,19 @@ class _HeaderDims():
                 npInd=np.newaxis
                 newSet=_HeaderSet(None , 'n' , None, 1)
             else:
-                set=self._dims[iset]
-                npInd, newSet = set.transform_index(index)
+                setDim=self._dims[iset]
+                npInd, newSet = setDim.transform_index(index)
                 iset+=1
             npIndex.append(npInd)
             newSets.append(newSet)
 
         rankIndex=tuple([slice(None) if isinstance(ind,list) or ind is None else 0 for ind in npIndex])
-        newSets = [set for ri, set in zip(rankIndex,newSets) if ri != 0]
+        newSets = [setDim for ri, setDim in zip(rankIndex,newSets) if ri != 0]
         return self._makeNPIndex(npIndex), rankIndex, _HeaderDims(newSets)
 
 
-    def _makeNPIndex(self, indexList):
+    @staticmethod
+    def _makeNPIndex(indexList):
         newinds = []
         for i, item in enumerate(indexList):
             if isinstance(item, list):

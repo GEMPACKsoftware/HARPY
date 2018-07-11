@@ -1,20 +1,21 @@
 """
 Created on Mar 02 11:39:45 2018
 
-.. sectionauthor:: Lyle Collins <Lyle.Collins@csiro.au>
-.. codeauthor:: Lyle Collins <Lyle.Collins@csiro.au>
 """
 import numpy as np
-from harpy._header_sets import  _HeaderDims
+from ._header_sets import  _HeaderDims
+from typing import Union,List,Dict
 
 
 class HeaderArrayObj(object):
 
     __array_priority__ = 2 #make this precede the np __add__ operations, etc
 
-    def __init__(self, *args, **kwargs):
-        
-        super().__init__(*args, **kwargs)
+    def __init__(self):
+        self._coeff_name=""
+        self._array=None
+        self._sets=None
+        self._long_name=""
 
     @property
     def array(self) -> np.ndarray:
@@ -67,7 +68,7 @@ class HeaderArrayObj(object):
 
     def __getitem__(self, item) -> 'HeaderArrayObj':
         npInd, rankInd, newDim = self._sets.transform_index(item)
-        return HeaderArrayObj.HeaderArrayFromData(array=np.array(self.array[npInd][rankInd]), sets=newDim)
+        return HeaderArrayObj.HeaderArrayFromCompiledData(array=np.array(self.array[npInd][rankInd]), SetDims=newDim)
 
     def __setitem__(self, key, value):
         npInd, rankInd, newDim = self._sets.transform_index(key)
@@ -88,14 +89,6 @@ class HeaderArrayObj(object):
         :return bool:
         """
 
-
-        # if (not isinstance(self._name, str)) or (len(self._name) != 4):
-        #     if raise_exception:
-        #         raise HeaderArrayObj.InvalidHeaderArrayName(
-        #             "Header array name (%s) must be precisely four (alphanumeric) characters." % self._name)
-        #     else:
-        #         return False
-
         if not isinstance(self._array, np.ndarray):
             if raise_exception:
                 raise TypeError("HeaderArrayObj 'array' must be of type 'numpy.ndarray'.")
@@ -112,57 +105,104 @@ class HeaderArrayObj(object):
             raise TypeError("'coeff_name' must be of str type.")
 
         if self._sets.shape != self.array.shape:
-            raise ValueError("shape of set and array does not match")
+            raise ValueError("shape of set and array do not match")
         return True
 
+    @staticmethod
+    def SetHeaderFromData(setName: str, setElements:'Union[List[str], np.array]',  long_name: str=None):
+        if not isinstance(setName,str):
+            raise TypeError("setName must be of type str")
+        if len(setName.strip()) > 12 :
+            raise ValueError("setName is restricted to 12 Characters")
+        if long_name is None: long_name=""
+        if isinstance(long_name, str):
+            long_name="Set "+setName.strip()+" "+long_name.strip()
+        else:
+            raise TypeError("LongName must be string")
+
+        if isinstance(setElements,(list,np.array)):
+            if not all([isinstance(el,str) for el in setElements]):
+                raise TypeError("All Set Elements must be of type str")
+            if not all([len(el)<=12 for el in setElements]):
+                raise ValueError("Set Elelement strings must be 12 characters at most")
+
+        if isinstance(setElements,list):
+            array=np.array(setElements)
+            setElDict={setName:setElements}
+        elif isinstance(setElements,np.ndarray):
+            array=setElements
+            setElDict = {setName: setElements.tolist()}
+        else:
+            raise TypeError("SetElemenets must be list of str or np array of strings")
+
+
+        return HeaderArrayObj.HeaderArrayFromData(array=array, long_name=long_name, sets=[setName], setElDict=setElDict)
 
     @staticmethod
-    def HeaderArrayFromData(array: np.ndarray, coeff_name: str=None, long_name: str=None,
-                            sets: 'Union[None, List[dict]]'=None) -> 'HeaderArrayObj':
+    def HeaderArrayFromData(array: np.ndarray, coeff_name: str = None, long_name: str = None,
+                            sets: 'List[str]' = None, setElDict: 'Dict[str:List[str]]' = None) -> 'HeaderArrayObj':
         """
-        Creates a new HeaderArrayObj from basic data.
-
-        :param str name: Header name (max 4 characters)
-        :param numpy.ndarray array: data array.
-        :param str coeff_name: coefficient name of the header array (must be no more than 12 characters).
-        :param str long_name: description of content (less than or equal to 70 characters).
-        :rtype: HeaderArrayObj
-        """
-        """
-        Ignore this string - just a comment for later inclusion in method docstring
-        
-        
-        :param list(str) sets: Name of the sets corresponding to each dimensions (size needs to be rank array)
-        :param SetElements: list of list of elements (one per dim) or dict(setnames,elements)
-        :type SetElements: list(list(str)) || dict(str:list(str))
+        Creates a new HeaderArrayObj from basic data. I.e. sets and set elements are given as basic list and dict[str:list[str]]
         """
 
         hao = HeaderArrayObj()
 
+        HeaderArrayObj._setHeaderBaseData(array, coeff_name, hao, long_name)
+        if sets is None:
+            hao.sets = _HeaderDims.fromShape(array.shape)
+        else:
+            if not isinstance(sets,list):
+                raise TypeError("sets must be of type list")
+            if not all(isinstance(setName,str) for setName in sets):
+                raise TypeError("all setNames in sets must be strings")
+            if not all(len(setName) <= 12 for setName in sets):
+                raise TypeError("all setNames in sets must be shorter than 13 Characters")
+
+            if setElDict is None: setElDict={}
+            if not isinstance(setElDict,dict):
+                raise TypeError("setElDict must be of type dict[str:list[str]]")
+
+            hao.sets = _HeaderDims.fromSetShape(sets, setElDict, array.shape)
+
+        if hao.is_valid():
+            return hao
+
+    @staticmethod
+    def HeaderArrayFromCompiledData(array: np.ndarray, coeff_name: str=None, long_name: str=None,
+                            SetDims: _HeaderDims=None) -> 'HeaderArrayObj':
+        """
+        Creates a new HeaderArrayObj from precompiled data. I.e. sets are already in _HeaderDim structure
+        """
+
+        hao = HeaderArrayObj()
+
+        HeaderArrayObj._setHeaderBaseData(array, coeff_name, hao, long_name)
+        if not isinstance(SetDims,_HeaderDims):
+            raise TypeError("sets must be of type _HeaderDims")
+        if SetDims is None:
+            hao.sets = _HeaderDims.fromShape(array.shape)
+        else:
+            hao.sets = SetDims
+
+        if hao.is_valid():
+            return hao
+
+    @staticmethod
+    def _setHeaderBaseData(array, coeff_name, hao, long_name) -> None:
         if not isinstance(array, np.ndarray):
             raise HeaderArrayObj.UnsupportedArrayType("'array' must be of numpy.ndarray type.")
-
         # Defaults handling
         if coeff_name is None:
-            coeff_name = " "*12
+            coeff_name = " " * 12
         if long_name is None:
             long_name = coeff_name
-
         if len(coeff_name) < 12:
             coeff_name = coeff_name.ljust(12)
         if len(long_name) < 70:
             long_name = long_name.ljust(70)
-
         hao.array = array
         hao.coeff_name = coeff_name
         hao.long_name = long_name
-        if sets is None:
-            hao.sets = _HeaderDims.fromShape(array.shape)
-        else:
-            hao.sets = sets
-
-        if hao.is_valid():
-            return hao
 
     def array_operation(self,
                         other: "Union[np.ndarray, HeaderArrayObj]",
@@ -181,7 +221,7 @@ class HeaderArrayObj(object):
         if issubclass(type(other), HeaderArrayObj):
             new_array = getattr(self.array, operation)(other.array)
             new_sets=self._sets.matchSets(sets=other._sets)
-        elif issubclass(type(other), (np.ndarray)):
+        elif issubclass(type(other), np.ndarray):
             new_array = getattr(self.array, operation)(other)
             new_sets=self._sets.matchSets(shape=other.shape)
         elif issubclass(type(other), (float, int)):
@@ -191,7 +231,7 @@ class HeaderArrayObj(object):
             msg = "Operation is not permitted for objects that are not of 'numpy.ndarray' type, or 'HeaderArrayObj' type."
             raise TypeError(msg)
 
-        return HeaderArrayObj.HeaderArrayFromData( array=new_array, sets=new_sets, **kwargs)
+        return HeaderArrayObj.HeaderArrayFromCompiledData( array=new_array, SetDims=new_sets, **kwargs)
 
     def __add__(self, other):
         return self.array_operation(other, "__add__")

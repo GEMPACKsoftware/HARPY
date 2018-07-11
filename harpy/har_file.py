@@ -3,15 +3,12 @@
     :members:
 
 Created on Mar 12 09:53:27 2018
-
-.. sectionauthor:: Lyle Collins <Lyle.Collins@csiro.au>
-.. codeauthor:: Lyle Collins <Lyle.Collins@csiro.au>
 """
 
 from .har_file_io import HarFileIO, HarFileInfoObj
 from .header_array import HeaderArrayObj
 from collections import OrderedDict
-from typing import TypeVar
+from typing import TypeVar, List, Union
 from os import path
 import warnings
 TypeHarFileObj = TypeVar('TypeHarFileObj', bound='HarFileObj')
@@ -56,7 +53,7 @@ class HarFileObj(object):
             else:
                 self._hfi = HarFileInfoObj(file=filename)
 
-    def __getitem__(self, item : 'Union[str, list[str]]' ):
+    def __getitem__(self, item : 'Union[str, List[str]]' ):
         if isinstance(item,str):
             return self._getHeaderArrayObj(item)
         elif isinstance(item,list):
@@ -67,7 +64,7 @@ class HarFileObj(object):
             raise TypeError("item must be string or list of strings")
 
 
-    def __setitem__(self, key: 'Union[str, list[str]]', value: 'Union[HeaderArrayObj, list[HeaderArrayObj]]'):
+    def __setitem__(self, key: 'Union[str, List[str]]', value: 'Union[HeaderArrayObj, List[HeaderArrayObj]]'):
         if isinstance(key, str) and isinstance(value,HeaderArrayObj):
             self._addHeaderArrayObj(key, value)
         elif isinstance(key, list) and isinstance(value,list):
@@ -109,7 +106,8 @@ class HarFileObj(object):
 
         if not self._hfi.is_valid():
             warnings.warn("Har file "+self._hfi.filename+" has changed since last access, rereading information")
-            self=HarFileObj(self._hfi.file)
+            self._hfi=HarFileObj(self._hfi.file)._hfi
+            self._head_arrs=OrderedDict()
 
         return self._hfi.getHeaderArrayNames()
 
@@ -120,7 +118,9 @@ class HarFileObj(object):
 
         if not self._hfi.is_valid():
             warnings.warn("Har file "+self._hfi.filename+" has changed since last access, rereading information")
-            self=HarFileObj(self._hfi.file)
+            self._hfi = HarFileObj(self._hfi.file)._hfi
+            self._head_arrs = OrderedDict()
+
         return [key for key,val in self._hfi.items() if val.data_type in ["RE"]]
 
 
@@ -134,14 +134,15 @@ class HarFileObj(object):
 
         if not self._hfi.is_valid():
             warnings.warn("Har file "+self._hfi.filename+" has changed since last access, rereading information")
-            self=HarFileObj(self._hfi.file)
+            self._hfi = HarFileObj(self._hfi.file)._hfi
+            self._head_arrs = OrderedDict()
 
         if not isinstance(ha_name, str):
             raise TypeError("'ha_name' must be a string.")
 
         upname=ha_name.strip().upper()
         if not upname in self._hfi:
-            raise KeyError("HeaderArrayObj '%s' does not exist in HarFileObj." % (ha_name))
+            raise KeyError("HeaderArrayObj '%s' does not exist in HarFileObj." % ha_name)
         if not upname in self._head_arrs:
             hnames, haos=  HarFileIO.readHeaderArraysFromFile(self._hfi, ha_names=upname)
             self._head_arrs[upname]=haos[0]
@@ -166,13 +167,11 @@ class HarFileObj(object):
             ha_objs.append(self._getHeaderArrayObj(ha_name))
         return ha_objs
 
-    def _readHeaderArrayObjs(self, filename: str, ha_names = None):
+    def _readHeaderArrayObjs(self, ha_names = None):
         """
          Reads the header array objects with names ``ha_names`` from ``filename``. If `None` (the default), read all header array objects. `harpy.HeaderArrayObj` are stored in ``self`` and can be retrieved with the ``self.getHeaderArrayObjs()`` method.
 
-        :param str filename:
         :param 'Union[None,str,List[str]]' ha_names:
-        :return: `None`
         """
         hnames, haos = HarFileIO.readHeaderArraysFromFile(self._hfi, ha_names=ha_names)
         self._head_arrs=OrderedDict(zip(hnames, haos))
@@ -230,7 +229,6 @@ class HarFileObj(object):
     def _addHeaderArrayObj(self, hname : str, ha_obj: HeaderArrayObj):
         """
         :param ha_obj: A `harpy.HeaderArrayObj` object.
-        :param idx: The index of ``self["head_arrs"]`` at which to insert ``ha_obj``.
         """
 
         if len(hname.strip()) > 4:
@@ -250,7 +248,7 @@ class HarFileObj(object):
         """
 
         hfo = HarFileObj(filename=filename)
-        hfo._readHeaderArrayObjs(hfo._hfi, ha_names=ha_names)
+        hfo._readHeaderArrayObjs(ha_names=ha_names)
 
         return hfo
 

@@ -11,8 +11,8 @@ import shutil
 
 import numpy as np
 
-from harpy.har_file import HarFileObj
-from harpy.header_array import HeaderArrayObj
+from ..har_file import HarFileObj
+from ..header_array import HeaderArrayObj
 
 class TestHarFileObj(unittest.TestCase):
     _dd = os.path.join(os.path.dirname(__file__), "testdata", "")
@@ -115,8 +115,8 @@ class TestHarFileObj(unittest.TestCase):
 
         # Test List get
         HeadList=hfo[test_hn]
-        for i,id in enumerate(test_hn):
-            self.assertTrue(hfo[id] == HeadList[i])
+        for i,headid in enumerate(test_hn):
+            self.assertTrue(hfo[headid] == HeadList[i])
 
         # Test bad request
         with self.assertRaises(KeyError):

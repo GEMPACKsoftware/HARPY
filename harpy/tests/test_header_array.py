@@ -7,13 +7,10 @@ Created on Mar 13 09:19:42 2018
 
 import os
 import unittest
-import shutil
-import sys
-
 import numpy as np
 
-from harpy.har_file import HarFileObj
-from harpy.header_array import HeaderArrayObj
+from ..har_file import HarFileObj
+from ..header_array import HeaderArrayObj
 
 
 class TestHeaderArray(unittest.TestCase):
