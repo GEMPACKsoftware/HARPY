@@ -46,7 +46,7 @@ class HarFileObj(object):
 
     def __init__(self, filename: str=None):
         self._head_arrs = OrderedDict()
-
+        self.filename=filename
         if isinstance(filename, str):
             if path.isfile(filename):
                 self._hfi = HarFileIO.readHarFileInfo(filename)
@@ -104,7 +104,7 @@ class HarFileObj(object):
         :return: Returns the name of all ``harpy.HeaderArrayObj()`` stored with ``self``.
         """
 
-        if not self._hfi.is_valid():
+        if not self._hfi.is_valid(fatal=False):
             warnings.warn("Har file "+self._hfi.filename+" has changed since last access, rereading information")
             self._hfi=HarFileObj(self._hfi.file)._hfi
             self._head_arrs=OrderedDict()
@@ -120,8 +120,7 @@ class HarFileObj(object):
             warnings.warn("Har file "+self._hfi.filename+" has changed since last access, rereading information")
             self._hfi = HarFileObj(self._hfi.file)._hfi
             self._head_arrs = OrderedDict()
-
-        return [key for key,val in self._hfi.items() if val.data_type in ["RE"]]
+        return [key for key,val in self._hfi.items() if val.data_type in ["RE","RL","2R"]]
 
 
     def _getHeaderArrayObj(self, ha_name: str):
@@ -132,7 +131,7 @@ class HarFileObj(object):
         :return: A ``harpy.HeaderArrayObj``.
         """
 
-        if not self._hfi.is_valid():
+        if not self._hfi.is_valid(fatal=False):
             warnings.warn("Har file "+self._hfi.filename+" has changed since last access, rereading information")
             self._hfi = HarFileObj(self._hfi.file)._hfi
             self._head_arrs = OrderedDict()
@@ -177,12 +176,15 @@ class HarFileObj(object):
         self._head_arrs=OrderedDict(zip(hnames, haos))
 
 
-    def writeToDisk(self, filename: str, ha_names=None):
+    def writeToDisk(self, filename: str=None, ha_names=None):
         """
         :param str filename: Writes `harpy.HeaderArrayObj` with ``ha_names`` to ``filename``. If ``ha_names`` is None, write all the `harpy.HeaderArrayObj` stored in ``self``.
         :param 'Union[None,str,List[str]]' ha_names: The names of the header arrays to write to ``filename``.
         """
-
+        if filename is None and self.filename is None:
+            raise ValueError("No filename specified in write or upon creation, use writeToDisk(filename=YOURFILENAME)")
+        if filename is None:
+            filename=self.filename
         if ha_names is None:
             ha_names = self.getHeaderArrayNames()
         elif isinstance(ha_names, str):
@@ -191,6 +193,7 @@ class HarFileObj(object):
         ha_to_write = self._getHeaderArrayObjs(ha_names)
 
         HarFileIO.writeHeaders(filename, ha_names, ha_to_write)
+        self._hfi.updateMtime()
 
     def _removeHeaderArrayObjs(self, ha_names):
         """
