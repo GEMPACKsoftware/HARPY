@@ -50,6 +50,8 @@ class HarFileInfoObj(object):
             self._ha_infos = OrderedDict()
 
 
+    def updateMtime(self):
+        self._mtime = os.path.getmtime(self.filename)
 
     def addHAInfo(self, name, pos_name, pos_data):
         name=name.strip().upper()
@@ -91,9 +93,12 @@ class HarFileInfoObj(object):
             raise ValueError("'%s' does not exist in har file '%s'." % (ha_name, self.filename))
         return self._ha_infos[ha_name.strip().upper()]
 
-    def is_valid(self):
+    def is_valid(self, fatal=True):
         if not os.path.isfile(self.filename):
-            raise FileNotFoundError("HAR file "+self.filename+" does not exist")
+            if fatal:
+                raise FileNotFoundError("HAR file "+self.filename+" does not exist")
+            else:
+                return True
         valid= self._mtime == os.path.getmtime(self.filename)
         self._mtime = os.path.getmtime(self.filename)
         return valid
@@ -138,7 +143,7 @@ class HarFileIO(object):
         :return: An `dict`, with the key-value pairs:
 
         """
-        hfi = HarFileInfoObj(file=filename)
+        hfiObj = HarFileInfoObj(file=filename)
 
         with open(filename, "rb") as f:
             f.seek(0)
@@ -147,10 +152,10 @@ class HarFileIO(object):
                 pos, name, end_pos = HarFileIO._readHeaderPosName(f)
                 if not name:
                     break
-                hfi.addHAInfo(name, pos, end_pos)
+                hfiObj.addHAInfo(name, pos, end_pos)
+                hfi=hfiObj.ha_infos[name]
                 (hfi.version, hfi.data_type, hfi.storage_type,  hfi.long_name, hfi.file_dims) = HarFileIO._getHeaderInfo(f, name)
-
-        return hfi
+        return hfiObj
 
     @staticmethod
     def _readHeaderPosName(fp: BinaryIO):
@@ -231,8 +236,9 @@ class HarFileIO(object):
                 elif ha_info.data_type == 'RE':
                     ha_info.has_elements = True
                     ha_info.array = HarFileIO._readREArray(fp, ha_info, file_dims=ha_info.file_dims)
-                # elif DataType == 'RL':
-                #     readHeader7D(self, False)
+                elif ha_info.data_type == 'RL':
+                    ha_info.has_elements = False
+                    ha_info.array = HarFileIO._readREArray(fp, ha_info, file_dims=ha_info.file_dims,hasSets=False)
                 elif ha_info.data_type in ['2R', '2I']:
                     if ha_info.data_type in ['2R']:
                         data_type = 'f'
@@ -640,9 +646,9 @@ class HarFileIO(object):
                 header_type_str = str(head_arr_obj.array.dtype)
                 has_sets = head_arr_obj.sets.defined()
                 # HarFileIO._writeHeader(fp, head_arr_obj)
-                if 'float32' == header_type_str and (head_arr_obj.array.ndim != 2 or has_sets):
+                if header_type_str in ['float32','float64'] and (head_arr_obj.array.ndim != 2 or has_sets):
                     HarFileIO._writeHeader7D(fp, hname, head_arr_obj)
-                elif 'int32' == header_type_str or 'float32' == header_type_str:
+                elif header_type_str in ['int32','int64', 'float32','float64' ]:
                     HarFileIO._writeHeader2D(fp, hname, head_arr_obj)
                 elif '<U' in header_type_str or '|S' in header_type_str:
                     if head_arr_obj.array.ndim > 1:
@@ -651,8 +657,9 @@ class HarFileIO(object):
                     HarFileIO._writeHeader1C(fp, hname, head_arr_obj)
                 else:
                     raise TypeError('Can not write data in Header: "' +
-                                    hname + '" as data style does not match any known Header type')
+                                    hname + '" as data style '+header_type_str+' does not match any known Header type')
                 fp.flush()
+
 
     @staticmethod
     def _writeHeader(fp: BinaryIO, hname : str, head_arr_obj: HeaderArrayObj):
@@ -767,9 +774,10 @@ class HarFileIO(object):
     @staticmethod
     def _writeHeaderName(fp: BinaryIO, name: str):
 
-        if len(name) != 4:
-            raise ValueError('Header name ' + name + ' is not 4 characters long. Header array not written to file.')
+        if len(name) > 4:
+            raise ValueError('Header name ' + name + ' is longer than 4 characters long. Header array not written to file.')
 
+        name=name.rjust(4)
         dataForm = '=i4si'
         packed = struct.pack(dataForm, 4, tb(name), 4)
         fp.write(packed)

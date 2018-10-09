@@ -89,7 +89,7 @@ class HeaderArrayObj(object):
         :return bool:
         """
 
-        if not isinstance(self._array, np.ndarray):
+        if not isinstance(self._array, (np.ndarray, np.float32, np.int32,np.float64)):
             if raise_exception:
                 raise TypeError("HeaderArrayObj 'array' must be of type 'numpy.ndarray'.")
             else:
@@ -105,7 +105,8 @@ class HeaderArrayObj(object):
             raise TypeError("'coeff_name' must be of str type.")
 
         if self._sets.shape != self.array.shape:
-            raise ValueError("shape of set and array do not match")
+            if not ( len(self._sets.shape) == 0 and self.array.size == 1):
+                raise ValueError("shape of set and array do not match")
         return True
 
     @staticmethod
@@ -120,7 +121,7 @@ class HeaderArrayObj(object):
         else:
             raise TypeError("LongName must be string")
 
-        if isinstance(setElements,(list,np.array)):
+        if isinstance(setElements,(list,np.ndarray)):
             if not all([isinstance(el,str) for el in setElements]):
                 raise TypeError("All Set Elements must be of type str")
             if not all([len(el)<=12 for el in setElements]):
@@ -189,8 +190,10 @@ class HeaderArrayObj(object):
 
     @staticmethod
     def _setHeaderBaseData(array, coeff_name, hao, long_name) -> None:
-        if not isinstance(array, np.ndarray):
+        if not isinstance(array, (np.ndarray, np.float32, np.int32,np.float64)):
+            print(type(array))
             raise HeaderArrayObj.UnsupportedArrayType("'array' must be of numpy.ndarray type.")
+
         # Defaults handling
         if coeff_name is None:
             coeff_name = " " * 12
@@ -232,6 +235,10 @@ class HeaderArrayObj(object):
             raise TypeError(msg)
 
         return HeaderArrayObj.HeaderArrayFromCompiledData( array=new_array, SetDims=new_sets, **kwargs)
+
+    def __neg__(self):
+        self.array=-self.array
+        return self
 
     def __add__(self, other):
         return self.array_operation(other, "__add__")

@@ -37,7 +37,11 @@ class _HeaderSet:
             newslice=self.convertSlice(index)
             npIndList=list(range(self.dim_size))[newslice]
             SetName=self._newname() if not all(p is None for p in [newslice.start,newslice.stop,newslice.step]) else self.name
-            return npIndList, _HeaderSet(SetName, self.status, self.dim_desc[newslice], len(self.dim_desc[newslice]))
+            if self.dim_desc:
+                return npIndList, _HeaderSet(SetName, self.status, self.dim_desc[newslice], len(npIndList))
+            else:
+                return npIndList, _HeaderSet(SetName, self.status, dim_desc=None, dim_size=len(npIndList))
+
 
         elif isinstance(index,list):
             useElem=self.status in ["e","k"]
@@ -113,6 +117,7 @@ class _HeaderDims:
                 setObjList.append(_HeaderSet(setName,'k',setElDict[lowerDict[lowSet]],shape[idim]))
             else:
                 setObjList.append(_HeaderSet(setName, 'u', None, shape[idim]))
+        return _HeaderDims(setObjList)
 
 
     @property
