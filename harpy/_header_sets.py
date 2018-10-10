@@ -187,6 +187,7 @@ class _HeaderDims:
                     else:
                         newSets.append(sets.dims[jset])
                     iset-= 1 ; jset -=1
+            newSets.reverse()
         elif not shape is None:
             iset = len(self.dims) - 1; jset=len(shape)-1
             while iset >=0 and jset >=0:

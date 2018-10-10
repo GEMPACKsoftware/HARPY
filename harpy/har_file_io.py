@@ -541,14 +541,14 @@ class HarFileIO(object):
 
         NSets = V[3]
         Coefficient = fb(V[4])
-
-        if NSets == 0:
+        setKnown=V[5]!=0
+        if not setKnown:
             dataForm = '=i'
         else:
             dataForm = "=" + str(NSets * 12) + 's' + str(NSets) + 's' + str(NSets) + 'i' + 'i'
 
         V = HarFileIO._unpack_data(fp, dataForm)
-        if NSets > 0:
+        if setKnown:
             SetNames = [fb(V[0][i:i + 12]) for i in range(0, NSets * 12, 12)]
             SetStatus = [fb(V[1][i:i + 1]) for i in range(0, NSets)]
 
@@ -646,6 +646,7 @@ class HarFileIO(object):
                 header_type_str = str(head_arr_obj.array.dtype)
                 has_sets = head_arr_obj.sets.defined()
                 # HarFileIO._writeHeader(fp, head_arr_obj)
+
                 if header_type_str in ['float32','float64'] and (head_arr_obj.array.ndim != 2 or has_sets):
                     HarFileIO._writeHeader7D(fp, hname, head_arr_obj)
                 elif header_type_str in ['int32','int64', 'float32','float64' ]:
@@ -661,58 +662,6 @@ class HarFileIO(object):
                 fp.flush()
 
 
-    @staticmethod
-    def _writeHeader(fp: BinaryIO, hname : str, head_arr_obj: HeaderArrayObj):
-
-        head_arr_obj.storage_type = 'FULL'
-
-        header_type_str = str(head_arr_obj.array.dtype)
-        type_char=""
-        if header_type_str == "float32":
-            type_char = 'f'
-            max_dim = 7
-            if head_arr_obj.array.ndim > 2:
-                if (float(np.count_nonzero(head_arr_obj.array)) / head_arr_obj.array.size) <= 0.4:
-                    head_arr_obj.storage_type = 'SPSE'
-                if head_arr_obj.sets.defined():
-                    head_arr_obj.data_type = "RE"
-                else:
-                    head_arr_obj.data_type = "RL"
-            elif head_arr_obj.array.ndim == 2:
-                max_dim = 2
-                head_arr_obj.data_type = "2R"
-        elif header_type_str == "int32":
-            type_char = 'i'
-            max_dim = 2
-            head_arr_obj.data_type = "2I"
-        elif '<U' in header_type_str or '|S' in header_type_str:
-            if head_arr_obj.array.ndim > 1:
-                raise ValueError("'%s' can not be written as character arrays with more than 1 dimension are not yet supported." % hname)
-            max_dim = 2 # Yes, seems a bit counter-intuitive I know
-            head_arr_obj.data_type = "1C"
-        else:
-            raise TypeError("Can not write data in '%s' as array does not match any known type." % hname)
-
-        secRecList = ['    ', head_arr_obj.data_type, head_arr_obj.storage_type, head_arr_obj.long_name, max_dim]
-        ext = [head_arr_obj.array.shape[i] if i < head_arr_obj.array.ndim else 1 for i in range(max_dim)]
-        if head_arr_obj.data_type == "1C":
-            ext = [head_arr_obj.array.size, int(header_type_str[2:])]
-        secRecList = secRecList + ext
-
-        HarFileIO._writeHeaderName(fp, hname)
-        HarFileIO._writeSecondRecord(fp, secRecList)
-
-        if head_arr_obj.data_type in ["RE", "RL"]:
-            if head_arr_obj.storage_type == 'FULL':
-                HarFileIO._write7DFullArray(fp, np.asfortranarray(head_arr_obj.array), type_char)
-            else:
-                HarFileIO._write7DSparseArray(fp, np.asfortranarray(head_arr_obj.array), type_char)
-        elif head_arr_obj.data_type in ["2I", "2R"]:
-            HarFileIO._write2DArray(fp, np.asfortranarray(head_arr_obj.array), type_char)
-        elif head_arr_obj.data_type in ["1C"]:
-            HarFileIO._write1CArray(fp, np.asfortranarray(head_arr_obj.array), head_arr_obj.array.size,12)
-        else:
-            raise ValueError("Unknown 'data_type' for this HeaderArrayObj.")
 
     @staticmethod
     def _writeHeader7D(fp: BinaryIO, hname : str, head_arr_obj: HeaderArrayObj):
@@ -727,16 +676,12 @@ class HarFileIO(object):
         shape7D = [head_arr_obj.array.shape[i] if i < head_arr_obj.array.ndim else 1 for i in range(0, 7)]
 
         HarFileIO._writeHeaderName(fp, hname)
-        if hasElements:
-            HeaderType = 'RE'
-        else:
-            HeaderType = 'RL'
+        HeaderType = 'RE'
 
         secRecList = ['    ', HeaderType, head_arr_obj.storage_type, head_arr_obj.long_name, 7]
         secRecList.extend(shape7D)
         HarFileIO._writeSecondRecord(fp, secRecList)
-        if hasElements:
-            HarFileIO._writeSetElInfo(fp, head_arr_obj)
+        HarFileIO._writeSetElInfo(fp, head_arr_obj)
 
         if head_arr_obj.storage_type == 'FULL':
             HarFileIO._write7DFullArray(fp, np.asfortranarray(head_arr_obj.array), 'f')
@@ -777,7 +722,7 @@ class HarFileIO(object):
         if len(name) > 4:
             raise ValueError('Header name ' + name + ' is longer than 4 characters long. Header array not written to file.')
 
-        name=name.rjust(4)
+        name=name.ljust(4)
         dataForm = '=i4si'
         packed = struct.pack(dataForm, 4, tb(name), 4)
         fp.write(packed)
@@ -941,11 +886,13 @@ class HarFileIO(object):
         CName = header_arr_obj.coeff_name
         tmp = {}
         elList = []
-        if not sets:
+        if all(item is None for item in sets):
             nToWrite = 0
-            nSets = 0
+            nSets = len(sets)
             nElement = 0
+            setsKnown= 0 # represents a fortran logical
         else:
+            setsKnown=1
             statusStr = ''
             outputElements = []
             for i, j, setEls in zip(sets, indexTypes, Elements):
@@ -963,17 +910,19 @@ class HarFileIO(object):
             nElement = len(elList)
             ElementStr = tb(''.join(elList))
             statusStr = tb(statusStr)
-            SetStr = tb(''.join([item.ljust(12) for item in sets]))
+            SetStr = tb(''.join([item.ljust(12) if not item is None else " "*12 for item in sets]))
             nSets = len(sets)
 
         dataForm = '=i4siii12si'
-        if nSets > 0: dataForm += str(nSets * 13) + 's' + str(nSets) + 'i'
+        if setsKnown == 1: dataForm += str(nSets * 13) + 's' + str(nSets) + 'i'
         dataForm += 'i'
         if nElement > 0: dataForm += str(nElement * 12)
         dataForm += 'i'
         nbyte = struct.calcsize(dataForm) - 8
-        writeList = [nbyte, tb('    '), nToWrite, 1, nSets, tb(CName.ljust(12)), 1]
-        if nSets > 0:
+
+        writeList = [nbyte, tb('    '), nToWrite, 1, nSets, tb(CName.ljust(12)), setsKnown]
+
+        if setsKnown == 1:
             writeList.append(SetStr + statusStr)
             writeList.extend([0]*len(Elements) )
 
