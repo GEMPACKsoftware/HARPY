@@ -89,7 +89,7 @@ class SL4(object):
 
         #extract the variables. The resulting headers do not distinguish between endo and exo
         for i in range(0,nvar):
-            self.generateSetDictEntry(i, resultsSet, setNames, setPos, varDims, varSetDict, varSetPtr)
+            setPos=self.generateSetDictEntry(i, resultsSet, setNames, setPos, varDims, varSetDict, varSetPtr)
 
             nendo, nexo, outDataList = self.assembleVariableData(HarObj, cumResCom, cumResPtr, i, nexoUsed,
                                                                  resultsDataHeaders, resultsShockComponents,
@@ -126,14 +126,10 @@ class SL4(object):
         setElDict = {}
         for myset in varSets:
             setElDict[myset.strip().lower()] = self.getSet(myset).array.tolist()
-        finalData = flatData.reshape(simSizes).astype(np.float32)
+        finalData = flatData.reshape(simSizes,order="F").astype(np.float32)
         # create headers for all variables
-        self.variableDict[self._variables[i].strip().lower()] = HeaderArrayObj.HeaderArrayFromData(finalData,
-                                                                                                   varLabel.array[i][
-                                                                                                   0:70],
-                                                                                                   self._variables[
-                                                                                                       i].strip()[0:12],
-                                                                                                   varSets, setElDict)
+        self.variableDict[self._variables[i].strip().lower()] = \
+            HeaderArrayObj.HeaderArrayFromData(finalData,self._variables[i].strip()[0:12],varLabel.array[i][0:70], varSets, setElDict)
 
     def assembleVariableData(self, HarObj, cumResCom, cumResPtr, i, nexoUsed, resultsDataHeaders,
                              resultsShockComponents, resultsShockList, shockPtr, shockVal, varExoList, varSizeEnd,
@@ -171,14 +167,13 @@ class SL4(object):
     def generateSetDictEntry(self, i, resultsSet, setNames, setPos, varDims, varSetDict, varSetPtr):
         ndim = varDims.array[i, 0]
         if ndim > 0:
-            varSetDict[self._variables[i].strip().lower()] = setNames.array[
-                [j - 1 for j in varSetPtr.array[setPos:setPos + ndim, 0]]].tolist()
-            varSetDict[self._variables[i].strip().lower()] = [name.strip() for name in
-                                                              varSetDict[self._variables[i].strip().lower()]]
+            varSetDict[self._variables[i].strip().lower()] = setNames.array[[j - 1 for j in varSetPtr.array[setPos:setPos + ndim, 0]]].tolist()
+            varSetDict[self._variables[i].strip().lower()] = [name.strip() for name in varSetDict[self._variables[i].strip().lower()]]
             setPos += ndim
         else:
             varSetDict[self._variables[i].strip().lower()] = []
         if len(resultsSet) > 1: varSetDict[self._variables[i].strip().lower()].append("#RESULTS")
+        return setPos
 
     def appendSubtotals(self, HarObj, resultsDataHeaders, resultsSet, resultsShockComponents, resultsShockList):
         nresults = HarObj["STLS"].array.flatten()[0]
