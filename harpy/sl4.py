@@ -198,6 +198,6 @@ class SL4(object):
                 if nshk == nexo:
                     varInd=j
                 else:
-                    varInd = shockList.array[j, 0] - 1
+                    varInd = shockList.array[shkInd, 0] - 1
                 flatData[varInd] = shockVal.array[shkInd, 0]
 
