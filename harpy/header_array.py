@@ -58,6 +58,10 @@ class HeaderArrayObj(object):
     def setNames(self):
         return self._sets.setNames
 
+    @setNames.setter
+    def setNames(self,sNames):
+        self._sets.setNames=sNames
+    
     @property
     def setElements(self):
         return self._sets.setElements
