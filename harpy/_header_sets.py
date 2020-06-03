@@ -143,6 +143,16 @@ class _HeaderDims:
     @property
     def setNames(self):
         return [dim.name for dim in self.dims]
+    
+    @setNames.setter
+    def setNames(self, sNames):
+        if not isinstance(sNames,list): raise TypeError("set Names needs to be given as a list of strings")
+        if len(sNames) != len(self.dims) : raise ValueError("wrong length of set List. Header is rank "+str(len(self.dims))+ "but received list size "+ len(sNames))
+        for name in sNames:
+            if not isinstance(name,str): raise TypeError("set Names contains a non string object: "+str(name))
+            if len(name.strip()) > 12 : raise ValueError("Set names are limited to 12 characters. received '"+name+"'")
+        for newName, dim in zip(sNames,self.dims):
+            dim.name=newName.strip()
 
     @property
     def setElements(self):
