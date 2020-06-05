@@ -210,7 +210,7 @@ class _HeaderDims:
                 if self.dims[iset].dim_size == shape[jset] or self.dims[iset].dim_size == 1 or shape[jset] == 1:
                     newSets.append(self.dims[iset])
                     iset-= 1 ; jset -=1
-           newSets.reverse()
+            newSets.reverse()
         else:
             return KeyError("Either sets o shape have to be defined")
 
