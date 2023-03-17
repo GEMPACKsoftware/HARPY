@@ -6,15 +6,21 @@ import numpy as np
 
 class SL4(object):
 
-    def __init__(self, fname):
+    def __init__(self, fname, extractList=None):
+        """
+        Decodes an SL4 file and returns variable Header (1 dim add containing cumulative solution + subtotals if present)
+        In addtion Set information is available via the getSet functions
+        :param fname: str filename of the SL4 file
+        :param extractList: list(varNames) only required if a subset of variables should be extracted
+        """
         self._sets=[]
         self._variables=[]
         self.setHeaders={}
         self.variableDict={}
         self.varTypeDict={}
         self.solFile=HarFileObj("fname"+".sol")
-        self.decode_SL4(fname)
-        
+        self.decode_SL4(fname, extractList)
+
 
     @property
     def variableNames(self):
@@ -40,14 +46,13 @@ class SL4(object):
             raise Exception ("Could not find set '"+name+"' in the SL4 file. Please check the set list")
         return self.setHeaders[name.strip().lower()]
 
-    def getVariable(self,name):
+    def getVariable(self,name:str) -> HeaderArrayObj:
         if not name.strip().lower() in self.variableDict:
             raise Exception("Could not find variable '" + name + "' in the SL4 file. Please check the variable list")
         return self.variableDict[name.strip().lower()]
 
-    def decode_SL4(self, fname):
+    def decode_SL4(self, fname, extractList):
         HarObj=HarFileObj(fname)
-
 
         #collect the set information. Not sure whether intertemporals work yet
         setNames =   HarObj["STNM"]
@@ -76,29 +81,39 @@ class SL4(object):
 
 
         varLower=[name.strip().lower() for name in varNames.array]
+        if not extractList: extractList=varLower
+        useVars=[item.lower() for item in extractList]
+        useDict=dict(zip(useVars,useVars))
+
         self.varTypeDict=dict(zip(varLower,HarObj["VCTP"].array))
         #prepare the different results. By default add cumulative. If subtatoals are present append them to the lists
-
-
 
         self._variables=[name.strip() for name in varNames.array.tolist()]
         varSetDict={}
         nvar=len(self._variables)
+
         nexoUsed=0; setPos=0
         self.variableDict={}
 
+
+
         #extract the variables. The resulting headers do not distinguish between endo and exo
         for i in range(0,nvar):
+            useIt=varLower[i] in useDict
             setPos=self.generateSetDictEntry(i, resultsSet, setNames, setPos, varDims, varSetDict, varSetPtr)
 
             nendo, nexo, outDataList = self.assembleVariableData(HarObj, cumResCom, cumResPtr, i, nexoUsed,
                                                                  resultsDataHeaders, resultsShockComponents,
                                                                  resultsShockList, shockPtr, shockVal, varExoList,
-                                                                 varSizeEnd, varSizeExo)
+                                                                 varSizeEnd, varSizeExo, generateData=useIt)
 
-            self.reshapeAndAdd(i, outDataList, varLabel, varSetDict)
+            if useIt: self.reshapeAndAdd(i, outDataList, varLabel, varSetDict)
             if nexo != 0 and nendo != 0: nexoUsed += nexo
 
+
+        # adjust available information to extracted data
+        self._variables = [name.strip() for name in varNames.array.tolist() if name.lower() in useDict]
+        self.varTypeDict = { key:val for key,val in  self.varTypeDict.items() if key.lower() in useDict}
 
     def generateSetHeaders(self, HarObj, setNames):
         setSizes = HarObj["SSZ"]
@@ -133,11 +148,13 @@ class SL4(object):
 
     def assembleVariableData(self, HarObj, cumResCom, cumResPtr, i, nexoUsed, resultsDataHeaders,
                              resultsShockComponents, resultsShockList, shockPtr, shockVal, varExoList, varSizeEnd,
-                             varSizeExo):
+                             varSizeExo, generateData=True):
         nexo = varSizeExo.array[i, 0]
         nendo = varSizeEnd.array[i, 0]
         # Assemble the data into a vector (subtotals are appended to the list as they are in the results* Lists)
         outDataList = []
+        if not generateData: return nendo, nexo, outDataList
+
         for DataHead, ShockComHead, ShockListHead in zip(resultsDataHeaders, resultsShockComponents, resultsShockList):
             cumRes = HarObj[DataHead]
             shockCom = HarObj[ShockComHead]
