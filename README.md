@@ -1,9 +1,14 @@
 # HARPY
 This project provides a python package to read and write HAR files produced by GEMPACK 11.4 or lower.
 
-## NEW - Harpy is available on pip!
+## HARPY on pip or master?
 
-Harpy can now be installed using pip (for python 3):
+The version of HARPY on pip is severly outdated and we do not recommend using it anymore. However, this version of HARPY is compatible with the CONCERO package whereas the master is not. 
+There is a plan to provide a new pip package (with different name). However, we currently lack the time to maintain it (you are welcome to contribute and make HARPY on pip your child).
+
+The current master branch provides a much improved interface and lots of additional functionality and bug fixes. For new users or users who do not depend on the CONCERO package download the master branch from git.
+
+For all others HARPY on pip can be obtained via:
 
 ```
     pip install harpy3
@@ -15,15 +20,13 @@ Harpy can now be installed using pip (for python 3):
     import harpy
 ```
 
+
+
 ## NEW - Harpy has adopted major (backwards-incompatible) changes
 
-Harpy has recently undergone major structural changes to make it easier to users to learn and use the library - this new version is 0.3 (the old is 0.01). As part of these changes, Harpy has moved from a Python 2 base to Python 3. The simpler interface comes with associated documentation, as well as a testing suite which (together) will make learning the Harpy API easier and help maintain/improve the code quality of Harpy. Please see the documentation section below for details.
+Harpy has recently undergone major structural changes to make it easier to users to learn and use the library (the old is 0.3). As part of these changes, Harpy has moved from a Python 2 base to Python 3. The simpler interface comes with associated documentation, as well as a testing suite which (together) will make learning the Harpy API easier and help maintain/improve the code quality of Harpy. Please see the documentation section below for details.
 
-The previous interface can be considered deprecated. Although bug-fixes to the old API will be considered, no guarantees of continued development  are given. Any development of the old-interface will be merged with the v001 branch. New development will occur on the master branch (as per the status quo). Similar to v0.01, v0.3 (with the Python 3-related changes) can be considered 'under development'. To use v0.01 can be done by one of these processes:
-
- 1. Downloading the zip file of the `v0.01` branch on GitHub, and following the identical install process as before (regardless of whether you were using `v0.01` or `v0.3`).
- 2. If using a git program with a graphical interface, switch to the  `v0.01` branch. This would likely be found by looking for a *checkout* option, and selecting a different branch - the `v0.01` branch. The remaining install process is identical as before (regardless of whether you were using `v0.01` or `v0.3`).
- 3. Using a git clone of the harpy repository, switch to the `v0.01` branch using the command ``git checkout v0.01``. The remaining install process is identical to that of `v0.3`. The remaining install process is identical as before (regardless of whether you were using `v0.01` or `v0.3`).
+The previous interface can be considered deprecated. Although bug-fixes to the old API will be considered, no guarantees of continued development  are given. New development will occur on the master branch (as per the status quo). Similar to v0.01, v0.3 (with the Python 3-related changes) can be considered 'under development'.
 
 ## Documentation
 
