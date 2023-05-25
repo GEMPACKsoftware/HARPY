@@ -112,7 +112,8 @@ class SL4(object):
 
 
         # adjust available information to extracted data
-        self._variables = [name.strip() for name in varNames.array.tolist() if name.lower() in useDict]
+        self._variables = [name.strip() for name in varNames.array.tolist() if name.strip().lower() in useDict]
+
         self.varTypeDict = { key:val for key,val in  self.varTypeDict.items() if key.lower() in useDict}
 
     def generateSetHeaders(self, HarObj, setNames):
@@ -159,12 +160,16 @@ class SL4(object):
             cumRes = HarObj[DataHead]
             shockCom = HarObj[ShockComHead]
             shockList = HarObj[ShockListHead]
-
             start = cumResPtr.array[i, 0] - 1
             end = start + cumResCom.array[i, 0]
             Data = np.asfortranarray(cumRes.array[start:end, 0])
-
             nshk = shockCom.array[i, 0]
+            nshockFromList=0
+            for iBefore in range(0,i):
+                if varSizeExo.array[iBefore, 0]==0: continue
+                if shockCom.array[iBefore, 0] == varSizeExo.array[iBefore, 0]: continue
+                nshockFromList+=shockCom.array[iBefore, 0]
+
             if nexo != 0 and nendo != 0:
                 insertMask = []
                 for j in range(nexoUsed, nexoUsed + nexo):
@@ -172,12 +177,12 @@ class SL4(object):
 
                 flatData = np.insert(Data, insertMask, 0)
 
-                self.insertShocks(flatData, i, nshk, nexo, shockList, shockPtr, shockVal)
+                self.insertShocks(flatData, i, nshk, nexo, shockList, shockPtr, shockVal, nshockFromList)
             elif nendo != 0:
                 flatData = Data
             else:
                 flatData = np.zeros(nexo)
-                self.insertShocks(flatData, i, nshk, nexo, shockList, shockPtr, shockVal)
+                self.insertShocks(flatData, i, nshk, nexo, shockList, shockPtr, shockVal,nshockFromList)
             outDataList.append(flatData)
         return nendo, nexo, outDataList
 
@@ -207,14 +212,11 @@ class SL4(object):
         self.setHeaders["#results"] = HeaderArrayObj.SetHeaderFromData("#RESULTS", np.array(resultsSet), "Cumlative and Subtotal elements")
 
     @staticmethod
-    def insertShocks(flatData, i, nshk, nexo, shockList, shockPtr, shockVal):
+    def insertShocks(flatData, i, nshk, nexo, shockList, shockPtr, shockVal, nshockFromList):
         if nshk > 0:
             start = shockPtr.array[i, 0] - 1
-            for j in range(0, nshk):
-                shkInd = start + j
-                if nshk == nexo:
-                    varInd=j
-                else:
-                    varInd = shockList.array[shkInd, 0] - 1
-                flatData[varInd] = shockVal.array[shkInd, 0]
+            if nshk == nexo:
+                flatData[0:nexo]=shockVal.array[start:start+nshk,0]
+            else:
+                flatData[shockList.array[nshockFromList:nshockFromList+nshk,0]-1]=shockVal.array[start:start+nshk, 0]
 
