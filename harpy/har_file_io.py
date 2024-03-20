@@ -153,7 +153,7 @@ class HarFileIO(object):
                 if not name:
                     break
                 hfiObj.addHAInfo(name, pos, end_pos)
-                hfi=hfiObj.ha_infos[name]
+                hfi=hfiObj.ha_infos[name.strip().upper()]
                 (hfi.version, hfi.data_type, hfi.storage_type,  hfi.long_name, hfi.file_dims) = HarFileIO._getHeaderInfo(f, name)
         return hfiObj
 
