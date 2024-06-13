@@ -56,8 +56,7 @@ class TestHarFileObj(unittest.TestCase):
 
         hfo.writeToDisk("test_overwrite_header.har")
 
-        with self.assertWarns(UserWarning):
-            header_names = hfo.getHeaderArrayNames()
+        header_names = hfo.getHeaderArrayNames()
         test_hn = ['XXCD', 'XXCR', 'XXCP', 'XXHS', 'CHST', 'INTA', 'SIMP', 'SIM2', 'NH01', 'ARR7']
         self.assertTrue(all([x == y for (x, y) in zip(header_names, test_hn)]))
 

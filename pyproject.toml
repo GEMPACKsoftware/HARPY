@@ -1,0 +1,30 @@
+[project]
+name = "harpy3"
+version = "0.3.2"
+description = "Library for reading/modifying/writing header-array (HAR) files."
+authors = [
+    { name = "Florian Schiffmann, Lyle Collins", email = "florian.schiffmann@vu.edu.au" },
+    { name = "Lyle Collins", email = "Lyle.Collins@csiro.au" },
+    { name = "Sam West", email = "sam.west@csiro.au" },
+]
+dependencies = [
+    "setuptools>=70.2.0",
+    "numpy",
+]
+requires-python = ">=3.9"
+readme = "README.md"
+license = { text = "GPLv3" }
+
+[project.urls]
+Homepage = "https://github.com/GEMPACKsoftware/HARPY"
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "pytest>=8.2.2",
+]
