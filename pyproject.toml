@@ -33,3 +33,8 @@ distribution = true
 dev = [
     "pytest>=8.2.2",
 ]
+
+[[tool.pdm.source]]
+name="csiroenergy"
+url="https://pkgs.dev.azure.com/csiro-energy/csiro-energy/_packaging/csiro-python-packages/pypi/simple/"
+verify_ssl=true

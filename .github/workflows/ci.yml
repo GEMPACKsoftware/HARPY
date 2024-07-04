@@ -1,9 +1,16 @@
 name: Python CI
 
+
 on:
   push:
   pull_request:
     branches: [ master ]
+
+env:
+  # Private package index credentials, for installing and publishing to the private pypi index (see readme)
+  PUBLISH_URL: ${{secrets.PRIVATE_PYPI_PUBLISH_URL}}
+  PUBLISH_USER: ${{secrets.PRIVATE_PYPI_PUBLISH_USER}}
+  PUBLISH_PASSWORD: ${{secrets.PRIVATE_PYPI_PUBLISH_PASSWORD}}
 
 jobs:
   build:
@@ -13,21 +20,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
+      - name: Setup PDM
+        uses: pdm-project/setup-pdm@v4
         with:
           python-version: '3.9'
-
-      - name: Cache PDM packages
-        uses: actions/cache@v2
-        with:
-          path: ~/.pdm
-          key: ${{ runner.os }}-pdm-${{ hashFiles('**/pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-pdm-
-
-      - name: Install PDM
-        run: pip install pdm
+          cache: true
 
       - name: Install dependencies
         run: pdm install
@@ -38,21 +35,15 @@ jobs:
       - name: Build
         run: pdm build
 
-      # bump the pyproject.toml version minor number on push to main
-      - name: Bump minor version
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: pdm bump micro
-
-      - name: Extract version from pyproject.toml
-        id: get_version
-        run: echo "::set-output name=VERSION::$(grep '^version = ' pyproject.toml | sed 's/version = //g' | tr -d '\"')"
-
-      - name: Create Release
-        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+      - name: Create Release from Tag
+        if: startsWith(github.ref, 'refs/tags/')
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "dist/**/*"
+          artifacts: "dist/*"
           token: ${{ secrets.GITHUB_TOKEN }}
           draft: false
-          prerelease: steps.check-version.outputs.prerelease == 'true'
-          tag: ${{ steps.get_version.outputs.VERSION }}
+          prerelease: false
+
+      - name: Publish to Private Package Index
+        if: startsWith(github.ref, 'refs/tags/')
+        run: pdm publish --repository https://${{env.PUBLISH_USER}}:${{env.PUBLISH_PASSWORD}}@pkgs.dev.azure.com/csiro-energy/csiro-energy/_packaging/csiro-python-packages/pypi/upload
