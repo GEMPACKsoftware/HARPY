@@ -1,6 +1,6 @@
 [project]
 name = "harpy3"
-version = "0.3.2"
+version = "0.3.3"
 description = "Library for reading/modifying/writing header-array (HAR) files."
 authors = [
     { name = "Florian Schiffmann, Lyle Collins", email = "florian.schiffmann@vu.edu.au" },
