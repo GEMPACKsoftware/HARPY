@@ -34,15 +34,3 @@ jobs:
 
       - name: Run pytest
         run: pdm run pytest
-
-      - name: Build
-        run: pdm build
-
-      - name: Create Github Release
-        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-        uses: softprops/action-gh-release@v1
-        with:
-          files: dist/*
-          token: ${{ secrets.GITHUB_TOKEN }}
-          draft: false
-          prerelease: false
