@@ -3,7 +3,6 @@
 
 name: Python CI
 
-
 on:
   push:
   pull_request:
@@ -23,12 +22,17 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup PDM
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Install PDM
         uses: pdm-project/setup-pdm@v4
         with:
           python-version: '3.9'
           cache: true
-
+          
       - name: Install dependencies
         run: pdm install
 
