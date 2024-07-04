@@ -34,3 +34,21 @@ jobs:
 
       - name: Run pytest
         run: pdm run pytest
+
+      - name: Build
+        run: pdm build
+
+      - name: Extract version from pyproject.toml
+        id: get_version
+        run: echo "::set-output name=VERSION::$(grep '^version = ' pyproject.toml | sed 's/version = //g' | tr -d '\"')"
+
+      - name: Create Release
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          release_name: Release ${{ steps.get_version.outputs.VERSION }}
+          draft: false
+          prerelease: false
