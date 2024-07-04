@@ -38,6 +38,11 @@ jobs:
       - name: Build
         run: pdm build
 
+      # bump the pyproject.toml version minor number on push to main
+      - name: Bump minor version
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: pdm bump micro
+
       - name: Extract version from pyproject.toml
         id: get_version
         run: echo "::set-output name=VERSION::$(grep '^version = ' pyproject.toml | sed 's/version = //g' | tr -d '\"')"
