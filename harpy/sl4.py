@@ -92,23 +92,26 @@ class SL4(object):
         varSetDict={}
         nvar=len(self._variables)
 
-        nexoUsed=0; setPos=0
+        nexoListUsed=0
+        nShkListUsed=0
+        setPos=0
+
         self.variableDict={}
-
-
 
         #extract the variables. The resulting headers do not distinguish between endo and exo
         for i in range(0,nvar):
             useIt=varLower[i] in useDict
             setPos=self.generateSetDictEntry(i, resultsSet, setNames, setPos, varDims, varSetDict, varSetPtr)
 
-            nendo, nexo, outDataList = self.assembleVariableData(HarObj, cumResCom, cumResPtr, i, nexoUsed,
+            outDataList = self.assembleVariableData(HarObj, cumResCom, cumResPtr, i, nexoListUsed,
                                                                  resultsDataHeaders, resultsShockComponents,
                                                                  resultsShockList, shockPtr, shockVal, varExoList,
                                                                  varSizeEnd, varSizeExo, generateData=useIt)
 
             if useIt: self.reshapeAndAdd(i, outDataList, varLabel, varSetDict)
-            if nexo != 0 and nendo != 0: nexoUsed += nexo
+            nexo = varSizeExo.array[i, 0]
+            nendo = varSizeEnd.array[i, 0]
+            if nexo != 0 and nendo != 0: nexoListUsed += nexo
 
 
         # adjust available information to extracted data
@@ -147,39 +150,45 @@ class SL4(object):
         self.variableDict[self._variables[i].strip().lower()] = \
             HeaderArrayObj.HeaderArrayFromData(finalData,self._variables[i].strip()[0:12],varLabel.array[i][0:70], varSets, setElDict)
 
-    def assembleVariableData(self, HarObj, cumResCom, cumResPtr, i, nexoUsed, resultsDataHeaders,
+    def assembleVariableData(self, HarObj, cumResCom, cumResPtr, iVar, nexoListUsed, resultsDataHeaders,
                              resultsShockComponents, resultsShockList, shockPtr, shockVal, varExoList, varSizeEnd,
                              varSizeExo, generateData=True):
-        nexo = varSizeExo.array[i, 0]
-        nendo = varSizeEnd.array[i, 0]
+        nexo = varSizeExo.array[iVar, 0]
+        nendo = varSizeEnd.array[iVar, 0]
         # Assemble the data into a vector (subtotals are appended to the list as they are in the results* Lists)
         outDataList = []
-        if not generateData: return nendo, nexo, outDataList
+        if not generateData: return outDataList
 
         for DataHead, ShockComHead, ShockListHead in zip(resultsDataHeaders, resultsShockComponents, resultsShockList):
             cumRes = HarObj[DataHead]
             shockCom = HarObj[ShockComHead]
             shockList = HarObj[ShockListHead]
-            start = cumResPtr.array[i, 0] - 1
-            end = start + cumResCom.array[i, 0]
+            start = cumResPtr.array[iVar, 0] - 1
+            end = start + cumResCom.array[iVar, 0]
             Data = np.asfortranarray(cumRes.array[start:end, 0])
-            nshk = shockCom.array[i, 0]
+            nshk = shockCom.array[iVar, 0]
+            nShkListUsed=0
+            for prevVar in range(0,iVar):
+                prevNEndo=varSizeEnd.array[prevVar, 0]
+                prevNExo=varSizeExo.array[prevVar, 0]
+                prevNShocked=shockCom.array[prevVar, 0]
+                if prevNShocked != prevNExo or prevNEndo != 0: nShkListUsed+=prevNShocked
 
-            if nexo != 0 and nendo != 0:
+            if nexo != 0 and nendo != 0:# partially exo
                 insertMask = []
-                for j in range(nexoUsed, nexoUsed + nexo):
-                    insertMask.append(varExoList.array[j, 0] - (j - nexoUsed + 1))
+                for j in range(nexoListUsed, nexoListUsed + nexo):
+                    insertMask.append(varExoList.array[j, 0] - (j - nexoListUsed + 1))
 
                 flatData = np.insert(Data, insertMask, 0)
 
-                self.insertShocks(flatData, i, nshk, nexo, shockList, shockPtr, shockVal)
-            elif nendo != 0:
+                self.insertShocks(flatData, iVar, nshk, nexo, shockList, shockPtr, shockVal, nShkListUsed)
+            elif nendo != 0: #fully endo
                 flatData = Data
-            else:
+            else:  # fully exo
                 flatData = np.zeros(nexo)
-                self.insertShocks(flatData, i, nshk, nexo, shockList, shockPtr, shockVal)
+                self.insertShocks(flatData, iVar, nshk, nexo, shockList, shockPtr, shockVal, nShkListUsed)
             outDataList.append(flatData)
-        return nendo, nexo, outDataList
+        return outDataList
 
     def generateSetDictEntry(self, i, resultsSet, setNames, setPos, varDims, varSetDict, varSetPtr):
         ndim = varDims.array[i, 0]
@@ -207,11 +216,11 @@ class SL4(object):
         self.setHeaders["#results"] = HeaderArrayObj.SetHeaderFromData("#RESULTS", np.array(resultsSet), "Cumlative and Subtotal elements")
 
     @staticmethod
-    def insertShocks(flatData, i, nshk, nexo, shockList, shockPtr, shockVal):
+    def insertShocks(flatData, i, nshk, nexo, shockList, shockPtr, shockVal,nShkListUsed):
         if nshk > 0:
             start = shockPtr.array[i, 0] - 1
             if nshk == nexo:
                 flatData[0:nexo]=shockVal.array[start:start+nshk,0]
             else:
-                flatData[shockList.array[start:start+nshk,0]-1]=shockVal.array[start:start+nshk, 0]
+                flatData[shockList.array[nShkListUsed:nShkListUsed+nshk,0]-1]=shockVal.array[start:start+nshk, 0]
 
