@@ -93,8 +93,8 @@ class _HeaderSet:
             return idx
 
     def _newname(self):
-        self._genSetID+=1
-        return "S@"+str(self._genSetID)
+        _HeaderSet._genSetID+=1
+        return "S@"+str(_HeaderSet._genSetID)
 
 
 class _HeaderDims:
